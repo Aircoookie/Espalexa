@@ -4,7 +4,8 @@
 
 It allows you to set a ranged value (e.g. Brightness) additionally to standard on/off control.
 You can say "Alexa, turn the light to 75%".
-If you just need On/Off (eg. for a relay) I'd recommend [arduino-esp8266-alexa-wemo-switch](https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch) instead, since it is a bit simpler.
+If you just need On/Off (eg. for a relay) I'd recommend [arduino-esp8266-alexa-wemo-switch](https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch) instead.
+
 
 Espalexa emulates parts of the SSDP protocol and the Philips hue API, just enough so it can be discovered and controlled by Alexa.
 This sketch is basically cobbled together from:
