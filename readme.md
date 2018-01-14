@@ -1,4 +1,5 @@
-## Espalexa allows you to easily control your ESP8266 with the Alexa voice assistant.
+## Espalexa allows you to easily control your ESP with the Alexa voice assistant.
+Now compatible with both ESP8266 and ESP32!
 
 #### What does this do similar projects like Fauxmo don't already?
 
@@ -16,13 +17,16 @@ This sketch is basically cobbled together from:
 This is a more generalized version of the file wled12_alexa.ino in my main ESP lighting project [WLED](https://github.com/Aircoookie/WLED).
 
 Espalexa only works with a genuine Echo device, it probably wont work with Echo emulators or RPi homebrew devices.
+You only need the src/dependencies folder if you compile for ESP32!
 
 ### Usage:
 
 1. After downloading, fill in your WiFi information in Espalexa.ino
 
-2. Manually compile and upload the Espalexa.ino sketch to your ESP board via the Arduino IDE. Wait until sketch is fully flashed.
+2. The default is 3, but depending on how many Alexa devices you'd like to emulate, just change the DEVICES define in line 24 and add/remove name and initial state array entries from line 84 accordingly!
 
-3. Tell Alexa to discover devices!
+3. Manually compile and upload the Espalexa.ino sketch to your ESP board via the Arduino IDE. Wait until sketch is fully flashed.
 
-4. This sketch doesn't do anything useful on its own, but you can easily adapt the actionOn/Off/Dim functions to control a PWM led, for example.
+4. Tell Alexa to discover devices!
+
+5. This sketch doesn't do anything useful on its own, but you can easily adapt the actionOn/Off/Dim functions to control a PWM led, for example.
