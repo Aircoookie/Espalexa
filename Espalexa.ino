@@ -102,7 +102,6 @@ void setup() {
   wifiConnected = connectWifi();
 
   // only proceed if wifi connection successful
-  if(wifiConnected){
     Serial.println("Ask Alexa to discover devices");
     udpConnected = connectUDP();
     
@@ -110,7 +109,6 @@ void setup() {
       // initialise pins if needed 
       startHttpServer();
     }
-  }  
 }
 
 void loop() {
@@ -120,7 +118,6 @@ void loop() {
   
   // if there's data available, read a packet
   // check if the WiFi and UDP connections were successful
-  if(wifiConnected){
     if(udpConnected){    
       // if there’s data available, read a packet
       int packetSize = UDP.parsePacket();
@@ -160,9 +157,6 @@ void loop() {
         
       delay(10);
     }
-  } else {
-      Serial.println("Cannot connect to Wifi");
-  }
 }
 
 String deviceJsonString(int deviceId)
@@ -307,7 +301,7 @@ void startHttpServer() {
         server.send(200, "text/plain", statrespone);
       
     });
-
+       
     server.onNotFound([](){
       Serial.println("Not-Found HTTP call:");
       Serial.println("URI: " + server.uri());
