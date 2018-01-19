@@ -102,6 +102,8 @@ void setup() {
   wifiConnected = connectWifi();
 
   // only proceed if wifi connection successful
+  if (wifiConnected)
+  {
     Serial.println("Ask Alexa to discover devices");
     udpConnected = connectUDP();
     
@@ -109,6 +111,16 @@ void setup() {
       // initialise pins if needed 
       startHttpServer();
     }
+  } else
+  {
+    while (1) { //endless loop
+      Serial.println("Cannot connect to WiFi!");
+      Serial.print("Please check that the credentials for network ");
+      Serial.print(ssid);
+      Serial.println(" are correct and then reset the ESP.");
+      delay(2500);
+    }
+  }
 }
 
 void loop() {
@@ -329,7 +341,7 @@ boolean connectWifi(){
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    if (i > 10){
+    if (i > 20){
       state = false;
       break;
     }
