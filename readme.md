@@ -28,6 +28,15 @@ void firstDeviceChanged(uint8_t brightness);
 Espalexa espalexa;
 ```
 
+You then want to actually add the callback function (one for each device)
+```cpp
+void firstLightChanged(uint8_t brightness) {
+  //brightness parameter contains the new device state (0:off,255:on,1-254:dimmed)
+  
+  //do what you'd like to happen here (e.g. control an LED)
+}
+```
+
 In your setup function, after you connected to WiFi, you'd want to add your devices:
 ```cpp
 espalexa.addDevice("Alexa name of the device", firstDeviceChanged);
