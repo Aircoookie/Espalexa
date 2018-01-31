@@ -21,7 +21,10 @@ Espalexa is designed to be as simple to use as possible.
 
 First, you'll need a global object declaration and a prototype for the function that Espalexa will call when the device is changed:
 ```cpp
+#include <Espalexa.h>
+
 void firstDeviceChanged(uint8_t brightness);
+
 Espalexa espalexa;
 ```
 
@@ -31,6 +34,19 @@ espalexa.addDevice("Alexa name of the device", firstDeviceChanged);
 ```
 The first parameter of the function is a string with the invocation name, the second is the name of your callback function (the one Espalexa will call when the state of the device was changed)
 You may also add a third `uint8_t` parameter that will specify the default brightness at boot.
+
+Below the device definition in setup, add:
+```cpp
+espalexa.begin();
+```
+
+Finally, in the loop() function, add:
+```cpp
+espalexa.loop();
+```
+
+And that's it!
+
 
 There is a second way to add devices which is more complicated, but allows you to update device values yourself.
 In global:
@@ -47,16 +63,6 @@ As you can see, `EspalexaDevice` takes the same parameters. However, you can now
 d->setValue(22);
 uint8_t bri = d->getValue(); //bri will have the device value
 String name = d->getName(); //just in case you forget it
-```
-
-Finally, below the device definition in setup, add:
-```cpp
-espalexa.begin();
-```
-
-In the loop() function:
-```cpp
-espalexa.loop();
 ```
 
 You can find a complete example implementation in the examples folder. Just change your WiFi info and try it out!
