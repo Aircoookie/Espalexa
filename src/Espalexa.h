@@ -5,7 +5,7 @@
 //#include <WiFiUDP.h>
 
 #ifdef ARDUINO_ARCH_ESP32
-#include "webserver/WebServer.h"
+#include "dependencies/webserver/WebServer.h"
 #else
 #include <ESP8266WebServer.h>
 #endif
@@ -50,18 +50,17 @@ public:
 		~Espalexa();
 		#ifdef ARDUINO_ARCH_ESP32
 		WebServer* server;
+		bool begin(WebServer* externalServer=nullptr);
 		#else
 		ESP8266WebServer* server;
+	    bool begin(ESP8266WebServer* externalServer=nullptr);
 		#endif
-        
-		bool begin();
 
 		bool addDevice(EspalexaDevice* d);
 		bool addDevice(String deviceName, CallbackBriFunction callback, uint8_t initialValue=0);
 
 		void loop();
 		
-		//this is bad, but this dirty workaround must work, should be private
 		bool handleAlexaApiCall(String req, String body);
 };
 

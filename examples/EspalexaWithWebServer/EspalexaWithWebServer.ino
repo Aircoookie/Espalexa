@@ -1,10 +1,12 @@
 /*
- * This is a basic example on how to use Espalexa and its device declaration methods.
+ * This is an example on how to use Espalexa alongside an ESP8266WebServer.
  */ 
 #ifdef ARDUINO_ARCH_ESP32
 #include <WiFi.h>
+#include "src/dependencies/webserver/WebServer.h" //https://github.com/bbx10/WebServer_tng
 #else
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #endif
 #include <Espalexa.h>
 
@@ -13,8 +15,6 @@ boolean connectWifi();
 
 //callback functions
 void firstLightChanged(uint8_t brightness);
-void secondLightChanged(uint8_t brightness);
-void thirdLightChanged(uint8_t brightness);
 
 // Change this!!
 const char* ssid = "...";
@@ -23,8 +23,11 @@ const char* password = "wifipassword";
 boolean wifiConnected = false;
 
 Espalexa espalexa;
-
-EspalexaDevice* device3; //this is optional
+#ifdef ARDUINO_ARCH_ESP32
+WebServer server(80);
+#else
+ESP8266WebServer server(80);
+#endif
 
 void setup()
 {
@@ -33,20 +36,29 @@ void setup()
   wifiConnected = connectWifi();
   
   if(wifiConnected){
-    
-    // Define your devices here. 
-    espalexa.addDevice("Light 1", firstLightChanged); //simplest definition, default state off
-    espalexa.addDevice("Light 2", secondLightChanged, 255); //third parameter is beginning state (here fully on)
-    
-    device3 = new EspalexaDevice("Light 3", thirdLightChanged); //you can also create the Device objects yourself like here
-    espalexa.addDevice(device3); //and then add them
-    device3->setValue(128); //this allows you to e.g. update their state value at any time!
+    server.on("/", HTTP_GET, [](){
+    server.send(200, "text/plain", "This is an example index page your server may send.");
+    });
+    server.on("/test", HTTP_GET, [](){
+    server.send(200, "text/plain", "This is a second subpage you may have.");
+    });
+    server.onNotFound([](){
+      if (!espalexa.handleAlexaApiCall(server.uri(),server.arg(0))) //if you don't know the URI, ask espalexa whether it is an Alexa control request
+      {
+        //whatever you want to do with 404s
+        server.send(404, "text/plain", "Not found");
+      }
+    });
 
-    espalexa.begin();
-    
+    // Define your devices here.
+    espalexa.addDevice("My Light 1", firstLightChanged); //simplest definition, default state off
+
+    espalexa.begin(&server); //give espalexa a pointer to your server object so it can use your server instead of creating its own
+    //server.begin(); //omit this since it will be done by espalexa.begin(&server)
   } else
   {
-    while (1) {
+    while (1)
+    {
       Serial.println("Cannot connect to WiFi. Please check data and reset the ESP.");
       delay(2500);
     }
@@ -55,6 +67,7 @@ void setup()
  
 void loop()
 {
+   //server.handleClient() //you can omit this line from your code since it will be called in espalexa.loop()
    espalexa.loop();
    delay(1);
 }
@@ -66,21 +79,15 @@ void firstLightChanged(uint8_t brightness) {
     //do what you need to do here
 
     //EXAMPLE
-    if (brightness) {
-      Serial.print("ON, brightness ");
-      Serial.println(brightness);
+    if (brightness == 255) {
+      Serial.println("ON");
     }
-    else  {
+    else if (brightness == 0) {
       Serial.println("OFF");
     }
-}
-
-void secondLightChanged(uint8_t brightness) {
-  //do what you need to do here
-}
-
-void thirdLightChanged(uint8_t brightness) {
-  //do what you need to do here
+    else {
+      Serial.print("DIM "); Serial.println(brightness);
+    }
 }
 
 // connect to wifi – returns true if successful or false if not
@@ -113,5 +120,6 @@ boolean connectWifi(){
   else {
     Serial.println("Connection failed.");
   }
+  delay(100);
   return state;
 }

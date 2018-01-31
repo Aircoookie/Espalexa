@@ -1,4 +1,5 @@
 ## Espalexa allows you to easily control your ESP with the Alexa voice assistant.
+It comes in an easy to use Arduino library or as a standalone example sketch.
 Now compatible with both ESP8266 and ESP32!
 
 #### What does this do similar projects like Fauxmo don't already?
@@ -7,6 +8,86 @@ It allows you to set a ranged value (e.g. Brightness) additionally to standard o
 You can say "Alexa, turn the light to 75%".
 If you just need On/Off (eg. for a relay) I'd recommend [arduino-esp8266-alexa-wemo-switch](https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch) instead.
 
+Additionally, it's possible to add up to a total of 20 devices.
+Each device has a brightness range from 0 to 255, where 0 is off and 255 is fully on.
+
+#### How do I install the library?
+
+It's a standard Arduino library. Just download it and add it as ZIP library in the IDE.
+
+#### What has to be done to use it?
+
+Espalexa is designed to be as simple to use as possible.
+
+First, you'll need a global object declaration and a prototype for the function that Espalexa will call when the device is changed:
+```cpp
+void firstDeviceChanged(uint8_t brightness);
+Espalexa espalexa;
+```
+
+In your setup function, after you connected to WiFi, you'd want to add your devices:
+```cpp
+espalexa.addDevice("Alexa name of the device", firstDeviceChanged);
+```
+The first parameter of the function is a string with the invocation name, the second is the name of your callback function (the one Espalexa will call when the state of the device was changed)
+You may also add a third `uint8_t` parameter that will specify the default brightness at boot.
+
+There is a second way to add devices which is more complicated, but allows you to update device values yourself.
+In global:
+```cpp
+EspalexaDevice* d;
+```
+In setup:
+```cpp
+d = new EspalexaDevice("Alexa name of the device", firstDeviceChanged);
+espalexa.addDevice(d);
+```
+As you can see, `EspalexaDevice` takes the same parameters. However, you can now do stuff like:
+```cpp
+d->setValue(22);
+uint8_t bri = d->getValue(); //bri will have the device value
+String name = d->getName(); //just in case you forget it
+```
+
+Finally, below the device definition in setup, add:
+```cpp
+espalexa.begin();
+```
+
+In the loop() function:
+```cpp
+espalexa.loop();
+```
+
+You can find a complete example implementation in the examples folder. Just change your WiFi info and try it out!
+
+Espalexa uses an internal WebServer. You can got to `http://[yourEspIP]/espalexa` to see all devices and their current state.
+
+#### My devices are not found?!
+
+Confirm your ESP is connected. Go to the /espalexa subpage to confirm all your devices are defined.
+Then ask Alexa to discover devices again or try it via the Alexa app.
+If nothing helps, open a Github issue and we will help.
+
+#### I tried to use this in my sketch that already uses an ESP8266WebServer, it doesn't work!
+
+Unfortunately, it is only possible to have one WebServer per network port. Both common browsers and Espalexa need to use port 80.
+The workaround is to have Espalexa use your server object instead of creating its own.
+See the example `EspalexaWithWebServer` for the complete implementation.
+
+In short, remove `server.handleClient()` and `server.begin()` from your code.
+Then, change `espalexa.begin()` to `espalexa.begin(&server)`.
+Finally, add this piece of code below your `server.on()` page definitions:
+```cpp
+server.onNotFound([](){
+	if (!espalexa.handleAlexaApiCall(server.uri(),server.arg(0)))
+	{
+		server.send(404, "text/plain", "Not found");
+	}
+});
+```
+
+#### How does this work?
 
 Espalexa emulates parts of the SSDP protocol and the Philips hue API, just enough so it can be discovered and controlled by Alexa.
 This sketch is basically cobbled together from:
@@ -18,15 +99,3 @@ This is a more generalized version of the file wled12_alexa.ino in my main ESP l
 
 Espalexa only works with a genuine Echo device, it probably wont work with Echo emulators or RPi homebrew devices.
 You only need the src/dependencies folder if you compile for ESP32!
-
-### Usage:
-
-1. After downloading, fill in your WiFi information in Espalexa.ino
-
-2. The default is 3, but depending on how many Alexa devices you'd like to emulate, just change the DEVICES define in line 24 and add/remove name and initial state array entries from line 84 accordingly!
-
-3. Manually compile and upload the Espalexa.ino sketch to your ESP board via the Arduino IDE. Wait until sketch is fully flashed.
-
-4. Tell Alexa to discover devices!
-
-5. This sketch doesn't do anything useful on its own, but you can easily adapt the actionOn/Off/Dim functions to control a PWM led, for example.
