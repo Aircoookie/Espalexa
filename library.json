@@ -1,0 +1,19 @@
+{
+"name": "Espalexa",
+"frameworks": "Arduino",
+"keywords": "alexa, esp32, esp8266, control, dimming",
+"description": "Library to control an ESP module with the Alexa voice assistant",
+"url": "https://github.com/Aircoookie/Espalexa",
+"authors":
+[
+{
+        "name": "Christian Schwinne"
+}
+],
+"repository":
+{
+    "type": "git",
+    "url": "https://github.com/Aircoookie/Espalexa"
+}
+}
+

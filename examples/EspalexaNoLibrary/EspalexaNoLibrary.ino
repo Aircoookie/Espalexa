@@ -1,4 +1,6 @@
 /*
+ * If you don't want to use the new library for some reason, all the functionality is in this standalone sketch.
+ * 
  * Alexa Voice On/Off/Brightness Control. Emulates a Philips Hue bridge to Alexa.
  * 
  * This was put together from these two excellent projects:
