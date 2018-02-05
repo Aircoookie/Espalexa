@@ -1,14 +1,14 @@
 /*
  * This is an example on how to use Espalexa alongside an ESP8266WebServer.
  */ 
-#ifdef ARDUINO_ARCH_ESP32
+#include <Espalexa.h>
+ #ifdef ARDUINO_ARCH_ESP32
 #include <WiFi.h>
-#include "src/dependencies/webserver/WebServer.h" //https://github.com/bbx10/WebServer_tng
+#include <dependencies/webserver/WebServer.h> //https://github.com/bbx10/WebServer_tng
 #else
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #endif
-#include <Espalexa.h>
 
 // prototypes
 boolean connectWifi();
