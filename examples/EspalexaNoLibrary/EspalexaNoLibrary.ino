@@ -9,7 +9,7 @@
  */
 /*
  * @title Espalexa sketch
- * @version 1.1
+ * @version 1.2
  * @author Christian Schwinne
  * @license MIT
  */
@@ -162,7 +162,7 @@ void loop() {
         String request = packetBuffer;
 
         if(request.indexOf("M-SEARCH") >= 0) {
-          if(request.indexOf("upnp:rootdevice") > 0) {
+          if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("device:basic:1") > 0) {
               Serial.println("Responding search req...");
               respondToSearch();
           }

@@ -7,7 +7,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.0.0
+ * @version 2.0.1
  * @author Christian Schwinne
  * @license MIT
  */
@@ -99,7 +99,7 @@ void Espalexa::loop() {
         String request = packetBuffer;
 		DEBUGLN(request);
         if(request.indexOf("M-SEARCH") >= 0) {
-          if(request.indexOf("upnp:rootdevice") > 0) {
+          if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("device:basic:1") > 0) {
               DEBUGLN("Responding search req...");
               respondToSearch();
           }
