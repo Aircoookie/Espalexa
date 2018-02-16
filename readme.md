@@ -2,6 +2,9 @@
 It comes in an easy to use Arduino library or as a standalone example sketch.
 Now compatible with both ESP8266 and ESP32!
 
+Update: It seems like this does not work with ESP8266 Arduino Core version 2.4.0. for some reason.
+Please use v2.3.0 for now. I am already working on making Espalexa compatible with 2.4.0.
+
 #### What does this do similar projects like Fauxmo don't already?
 
 It allows you to set a ranged value (e.g. Brightness) additionally to standard on/off control.
@@ -81,6 +84,7 @@ Espalexa uses an internal WebServer. You can got to `http://[yourEspIP]/espalexa
 #### My devices are not found?!
 
 Confirm your ESP is connected. Go to the /espalexa subpage to confirm all your devices are defined.
+Check your router configuration. Espalexa might need to have UPnP enabled for discovery to work.
 Then ask Alexa to discover devices again or try it via the Alexa app.
 If nothing helps, open a Github issue and we will help.
 
