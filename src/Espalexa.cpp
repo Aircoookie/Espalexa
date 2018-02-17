@@ -191,7 +191,7 @@ void servePage()
 	  }
 	  res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
 	  res += "\r\nUptime: " + (String)millis();
-	  res += "\r\n\r\nEspalexa library V2.0.0 by Christian Schwinne 2018";
+	  res += "\r\n\r\nEspalexa library V2.1.0 by Christian Schwinne 2018";
 	  instance->server->send(200, "text/plain", res);
 }
 
