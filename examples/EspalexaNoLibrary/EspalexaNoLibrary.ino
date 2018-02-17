@@ -389,7 +389,13 @@ void alexaDim(uint8_t deviceId, uint8_t briL)
 
   server.send(200, "application/json", body.c_str());
 
-  actionDim(deviceId, briL+1);
+  if (briL <255)
+  {
+    actionDim(deviceId, briL+1);
+  } else
+  {
+    actionDim(deviceId, 255);
+  }
 }
 
 void prepareIds() {

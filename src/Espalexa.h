@@ -16,7 +16,7 @@ class EspalexaDevice {
 private:
 		String _deviceName;
 		CallbackBriFunction _callback;
-		uint8_t _val;
+		uint8_t _val, _val_last;
 public:
 		EspalexaDevice();
 		~EspalexaDevice();
@@ -28,6 +28,8 @@ public:
 		void setValue(uint8_t bri);
 		
 		void doCallback();
+		
+		uint8_t getLastValue(); //last value that was not off (1-255)
 };
 
 class Espalexa {
@@ -40,7 +42,6 @@ private:
         void handleDescriptionXml();
 		void respondToSearch();
 		String boolString(bool st);
-		String briForHue(int realVal);
 		bool connectUDP();
 		void alexaOn(uint8_t deviceId);
 		void alexaOff(uint8_t deviceId);
