@@ -83,8 +83,12 @@ Espalexa uses an internal WebServer. You can got to `http://[yourEspIP]/espalexa
 Confirm your ESP is connected. Go to the /espalexa subpage to confirm all your devices are defined.
 Check your router configuration. Espalexa might need to have UPnP enabled for discovery to work.
 Then ask Alexa to discover devices again or try it via the Alexa app.
-Try using ESP8266 Arduino core 2.3.0. Version 2.4.0 may cause issues. 
 If nothing helps, open a Github issue and we will help.
+
+#### The devices are found but I can't control them! They are always on!
+
+Please try using ESP8266 Arduino core version 2.3.0.
+If you have to use 2.4.0, see this [workaround](https://github.com/Aircoookie/Espalexa/issues/6#issuecomment-366533897).
 
 #### I tried to use this in my sketch that already uses an ESP8266WebServer, it doesn't work!
 
