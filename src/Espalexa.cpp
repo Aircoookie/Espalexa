@@ -7,11 +7,11 @@
  */
 /*
  * @title Espalexa library
- * @version 2.1.0
+ * @version 2.1.1
  * @author Christian Schwinne
  * @license MIT
  */
-#define DEBUG_ESPALEXA
+//#define DEBUG_ESPALEXA
  
 #ifdef DEBUG_ESPALEXA
  #define DEBUG(x)  Serial.print (x)
