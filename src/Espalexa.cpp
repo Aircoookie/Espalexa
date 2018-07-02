@@ -7,7 +7,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.1.1
+ * @version 2.1.2
  * @author Christian Schwinne
  * @license MIT
  */
@@ -43,7 +43,7 @@ IPAddress ipMulti(239, 255, 255, 250);
 bool udpConnected = false;
 unsigned int portMulti = 1900;      // local port to listen on
 char packetBuffer[255]; //buffer to hold incoming packet,
-String escapedMac; //lowercase mac address
+String escapedMac=""; //lowercase mac address
 Espalexa* instance;
 
 Espalexa::Espalexa() { //constructor
@@ -84,7 +84,7 @@ void Espalexa::loop() {
       
       if(packetSize) {
 		DEBUGLN("Got UDP!");
-        int len = UDP.read(packetBuffer, 255);
+        int len = UDP.read(packetBuffer, 254);
         if (len > 0) {
             packetBuffer[len] = 0;
         }
@@ -191,7 +191,7 @@ void servePage()
 	  }
 	  res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
 	  res += "\r\nUptime: " + (String)millis();
-	  res += "\r\n\r\nEspalexa library V2.1.0 by Christian Schwinne 2018";
+	  res += "\r\n\r\nEspalexa library V2.1.2 by Christian Schwinne 2018";
 	  instance->server->send(200, "text/plain", res);
 }
 

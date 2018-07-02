@@ -34,9 +34,6 @@ public:
 
 class Espalexa {
 private:
-		String escapedMac;
-		bool udpConnected;
-		
 		void startHttpServer();
 		String deviceJsonString(uint8_t deviceId);
         void handleDescriptionXml();
