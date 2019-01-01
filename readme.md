@@ -4,12 +4,16 @@ Now compatible with both ESP8266 and ESP32!
 
 #### What does this do similar projects like Fauxmo don't already?
 
-It allows you to set a ranged value (e.g. Brightness) additionally to standard on/off control.
-You can say "Alexa, turn the light to 75%".
+It allows you to set a ranged value (e.g. Brightness, Temperature) additionally to standard on/off control.
+For example, you can say "Alexa, turn the light to 75% / 21 degrees".
+Alexa finally added color support to the local API! You can see how to add color devices in the EspalexaColor example.
+Then, you can say "Alexa, turn the light to Blue". Color temperature (white shades) is also supported, but still a WIP.
+
 If you just need On/Off (eg. for a relay) I'd recommend [arduino-esp8266-alexa-wemo-switch](https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch) instead.
 
 Additionally, it's possible to add up to a total of 20 devices.
 Each device has a brightness range from 0 to 255, where 0 is off and 255 is fully on.
+You can get a percentage from that value using `espalexa.toPercent(brightness)`
 
 #### How do I install the library?
 
