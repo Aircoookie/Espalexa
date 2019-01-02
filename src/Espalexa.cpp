@@ -7,7 +7,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.2.0
+ * @version 2.2.1
  * @author Christian Schwinne
  * @license MIT
  */
@@ -83,7 +83,7 @@ void Espalexa::loop() {
       String request = packetBuffer;
       DEBUGLN(request);
       if(request.indexOf("M-SEARCH") >= 0) {
-        if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("device:basic:1") > 0) {
+        if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("asic:1") > 0) {
           DEBUGLN("Responding search req...");
           respondToSearch();
         }
@@ -210,7 +210,7 @@ void servePage()
   }
   res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
   res += "\r\nUptime: " + (String)millis();
-  res += "\r\n\r\nEspalexa library V2.2.0 by Christian Schwinne 2019";
+  res += "\r\n\r\nEspalexa library V2.2.1 by Christian Schwinne 2019";
   instance->server->send(200, "text/plain", res);
 }
 
@@ -330,12 +330,13 @@ void Espalexa::respondToSearch() {
 
   String response = 
     "HTTP/1.1 200 OK\r\n"
+    "HOST : 239.255.255.250:1900\r\n"
     "EXT:\r\n"
     "CACHE-CONTROL: max-age=100\r\n" // SSDP_INTERVAL
     "LOCATION: http://"+ String(s) +":80/description.xml\r\n"
     "SERVER: FreeRTOS/6.0.5, UPnP/1.0, IpBridge/1.17.0\r\n" // _modelName, _modelNumber
     "hue-bridgeid: "+ escapedMac +"\r\n"
-    "ST: urn:schemas-upnp-org:device:basic:1\r\n"  // _deviceType
+    "ST: upnp:rootdevice\r\n"  // _deviceType
     "USN: uuid:2f402f80-da50-11e1-9b23-"+ escapedMac +"::upnp:rootdevice\r\n" // _uuid::_deviceType
     "\r\n";
 
