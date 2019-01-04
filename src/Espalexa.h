@@ -13,44 +13,57 @@
  * @version 2.3.0
  * @author Christian Schwinne
  * @license MIT
+ * @contributors d-999
  */
 
 #include "Arduino.h"
 
-#ifdef ARDUINO_ARCH_ESP32
-#include <WiFi.h>
-#include "dependencies/webserver/WebServer.h" //https://github.com/bbx10/WebServer_tng
+//you can use these defines for library config in your sketch. Just use them before #include <Espalexa.h>
+//#define ESPALEXA_ASYNC
+
+#ifndef ESPALEXA_MAXDEVICES
+ #define ESPALEXA_MAXDEVICES 10 //this limit only has memory reasons, set it higher should you need to
+#endif
+
+//#define ESPALEXA_DEBUG
+
+#ifdef ESPALEXA_ASYNC
+ #ifdef ARDUINO_ARCH_ESP32
+  #include <AsyncTCP.h>
+ #else
+  #include <ESPAsyncTCP.h>
+ #endif
+ #include <ESPAsyncWebServer.h>
 #else
-#include <ESP8266WebServer.h>
-#include <ESP8266WiFi.h>
+ #ifdef ARDUINO_ARCH_ESP32
+  #include <WiFi.h>
+  #include <WebServer.h> //if you get an error here please update to ESP32 arduino core 1.0.0
+ #else
+  #include <ESP8266WebServer.h>
+  #include <ESP8266WiFi.h>
+ #endif
 #endif
 #include <WiFiUdp.h>
 
-#ifndef ESPALEXA_ASYNC
-#define ESPALEXA_ASYNC 0
-#endif
-
-#ifndef ESPALEXA_MAXDEVICES
-#pragma message "not defined"
-#define ESPALEXA_MAXDEVICES 20 //this limit only has memory reasons, set it higher should you need to
-#else
-#pragma message "was defined"
-#endif
-
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa Debugging enabled"
- #define DEBUG(x)  Serial.print (x)
- #define DEBUGLN(x) Serial.println (x)
+ #pragma message "Espalexa 2.3.0 debug mode"
+ #define EA_DEBUG(x)  Serial.print (x)
+ #define EA_DEBUGLN(x) Serial.println (x)
 #else
- #define DEBUG(x)
- #define DEBUGLN(x)
+ #define EA_DEBUG(x)
+ #define EA_DEBUGLN(x)
 #endif
 
 #include "EspalexaDevice.h"
 
 class Espalexa {
 private:
-  #ifdef ARDUINO_ARCH_ESP32
+  //private member vars
+  #ifdef ESPALEXA_ASYNC
+  AsyncWebServer* serverAsync;
+  AsyncWebServerRequest* server; //this saves many #defines
+  String body = "";
+  #elif defined ARDUINO_ARCH_ESP32
   WebServer* server;
   #else
   ESP8266WebServer* server;
@@ -66,7 +79,7 @@ private:
   char packetBuffer[255]; //buffer to hold incoming udp packet
   String escapedMac=""; //lowercase mac address
   
-  
+  //private member functions
   String deviceJsonString(uint8_t deviceId)
   {
     if (deviceId < 1 || deviceId > currentDeviceCount) return "{}"; //error
@@ -88,9 +101,10 @@ private:
     return json;
   }
   
+  //Espalexa status page /espalexa
   void servePage()
   {
-    DEBUGLN("HTTP Req espalexa ...\n");
+    EA_DEBUGLN("HTTP Req espalexa ...\n");
     String res = "Hello from Espalexa!\r\n\r\n";
     for (int i=0; i<currentDeviceCount; i++)
     {
@@ -98,22 +112,30 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library V2.2.0 by Christian Schwinne 2019";
+    res += "\r\n\r\nEspalexa library v2.3.0 by Christian Schwinne 2019";
     server->send(200, "text/plain", res);
   }
 
+  //not found URI (only if internal webserver is used)
   void serveNotFound()
   {
-    DEBUGLN("Not-Found HTTP call:");
-    DEBUGLN("URI: " + server->uri());
-    DEBUGLN("Body: " + server->arg(0));
-    if(!handleAlexaApiCall(server->uri(),server->arg(0)))
+    EA_DEBUGLN("Not-Found HTTP call:");
+    #ifndef ESPALEXA_ASYNC
+    EA_DEBUGLN("URI: " + server->uri());
+    EA_DEBUGLN("Body: " + server->arg(0));
+    if(!handleAlexaApiCall(server->uri(), server->arg(0)))
+    #else
+    EA_DEBUGLN("URI: " + server->url());
+    EA_DEBUGLN("Body: " + body);
+    if(!handleAlexaApiCall(server))
+    #endif
       server->send(404, "text/plain", "Not Found (espalexa-internal)");
   }
 
+  //send description.xml device property page
   void serveDescription()
   {
-    DEBUGLN("# Responding to description.xml ... #\n");
+    EA_DEBUGLN("# Responding to description.xml ... #\n");
     IPAddress localIP = WiFi.localIP();
     char s[16];
     sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
@@ -155,11 +177,33 @@ private:
           
     server->send(200, "text/xml", setup_xml.c_str());
     
-    DEBUG("Sending :");
-    DEBUGLN(setup_xml);
+    EA_DEBUG("Sending :");
+    EA_DEBUGLN(setup_xml);
   }
   
-  void startHttpServer() {
+  //init the server
+  void startHttpServer()
+  {
+    #ifdef ESPALEXA_ASYNC
+    if (serverAsync == nullptr) {
+      serverAsync = new AsyncWebServer(80);
+      //serverAsync->onRequestBody([=](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){server = request; serveNotFound();});
+      serverAsync->onNotFound([=](AsyncWebServerRequest *request){server = request; serveNotFound();});
+    }
+    
+    serverAsync->onRequestBody([=](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      char b[len +1];
+      b[len] = 0;
+      memcpy(b, data, len);
+      body = b; //save the body so we can use it for the API call
+      EA_DEBUG("Received body: ");
+      EA_DEBUGLN(body);
+    });
+    serverAsync->on("/espalexa", HTTP_GET, [=](AsyncWebServerRequest *request){server = request; servePage();});
+    serverAsync->on("/description.xml", HTTP_GET, [=](AsyncWebServerRequest *request){server = request; serveDescription();});
+    serverAsync->begin();
+    
+    #else
     if (server == nullptr) {
       #ifdef ARDUINO_ARCH_ESP32
       server = new WebServer(80);
@@ -170,24 +214,26 @@ private:
     }
 
     server->on("/espalexa", HTTP_GET, [=](){servePage();});
-
     server->on("/description.xml", HTTP_GET, [=](){serveDescription();});
-
     server->begin();
+    #endif
   }
 
+  //called when Alexa sends ON command
   void alexaOn(uint8_t deviceId)
   {
     devices[deviceId-1]->setValue(devices[deviceId-1]->getLastValue());
     devices[deviceId-1]->doCallback();
   }
 
+  //called when Alexa sends OFF command
   void alexaOff(uint8_t deviceId)
   {
     devices[deviceId-1]->setValue(0);
     devices[deviceId-1]->doCallback();
   }
 
+  //called when Alexa sends BRI command
   void alexaDim(uint8_t deviceId, uint8_t briL)
   {
     if (briL == 255)
@@ -199,19 +245,23 @@ private:
     devices[deviceId-1]->doCallback();
   }
 
+  //called when Alexa sends HUE command
   void alexaCol(uint8_t deviceId, uint16_t hue, uint8_t sat)
   {
     devices[deviceId-1]->setColor(hue, sat);
     devices[deviceId-1]->doCallback();
   }
 
+  //called when Alexa sends CT command (color temperature)
   void alexaCt(uint8_t deviceId, uint16_t ct)
   {
     devices[deviceId-1]->setColor(ct);
     devices[deviceId-1]->doCallback();
   }
 
-  void respondToSearch() {
+  //respond to UDP SSDP M-SEARCH
+  void respondToSearch()
+  {
     IPAddress localIP = WiFi.localIP();
     char s[16];
     sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
@@ -241,29 +291,30 @@ private:
     return(st)?"true":"false";
   }
 
-  uint8_t toPercent(uint8_t bri)
-  {
-    uint16_t perc = bri * 100;
-    return perc / 255;
-  }
-
 public:
   Espalexa(){}
 
-  #ifdef ARDUINO_ARCH_ESP32
+  //initialize interfaces
+  #ifdef ESPALEXA_ASYNC
+  bool begin(AsyncWebServer* externalServer = nullptr)
+  #elif defined ARDUINO_ARCH_ESP32
   bool begin(WebServer* externalServer = nullptr)
   #else
   bool begin(ESP8266WebServer* externalServer = nullptr)
   #endif
   {
-    DEBUGLN("Espalexa Begin...");
-    DEBUG("MAXDEVICES ");
-    DEBUGLN(ESPALEXA_MAXDEVICES);
+    EA_DEBUGLN("Espalexa Begin...");
+    EA_DEBUG("MAXDEVICES ");
+    EA_DEBUGLN(ESPALEXA_MAXDEVICES);
     escapedMac = WiFi.macAddress();
     escapedMac.replace(":", "");
     escapedMac.toLowerCase();
 
+    #ifdef ESPALEXA_ASYNC
+    serverAsync = externalServer;
+    #else
     server = externalServer;
+    #endif
     #ifdef ARDUINO_ARCH_ESP32
     udpConnected = espalexaUdp.beginMulticast(IPAddress(239, 255, 255, 250), 1900);
     #else
@@ -273,32 +324,35 @@ public:
     if (udpConnected){
       
       startHttpServer();
-      DEBUGLN("Done");
+      EA_DEBUGLN("Done");
       return true;
     }
-    DEBUGLN("Failed");
+    EA_DEBUGLN("Failed");
     return false;
   }
 
+  //service loop
   void loop() {
+    #ifndef ESPALEXA_ASYNC
     if (server == nullptr) return; //only if begin() was not called
     server->handleClient();
+    #endif
     
     if (!udpConnected) return;   
     int packetSize = espalexaUdp.parsePacket();    
     if (!packetSize) return; //no new udp packet
     
-    DEBUGLN("Got UDP!");
+    EA_DEBUGLN("Got UDP!");
     int len = espalexaUdp.read(packetBuffer, 254);
     if (len > 0) {
       packetBuffer[len] = 0;
     }
 
     String request = packetBuffer;
-    DEBUGLN(request);
+    EA_DEBUGLN(request);
     if(request.indexOf("M-SEARCH") >= 0) {
       if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("asic:1") > 0) {
-        DEBUGLN("Responding search req...");
+        EA_DEBUGLN("Responding search req...");
         respondToSearch();
       }
     }
@@ -306,8 +360,8 @@ public:
 
   bool addDevice(EspalexaDevice* d)
   {
-    DEBUG("Adding device ");
-    DEBUGLN((currentDeviceCount+1));
+    EA_DEBUG("Adding device ");
+    EA_DEBUGLN((currentDeviceCount+1));
     if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
     devices[currentDeviceCount] = d;
     currentDeviceCount++;
@@ -316,8 +370,8 @@ public:
 
   bool addDevice(String deviceName, CallbackBriFunction callback, uint8_t initialValue = 0)
   {
-    DEBUG("Constructing device ");
-    DEBUGLN((currentDeviceCount+1));
+    EA_DEBUG("Constructing device ");
+    EA_DEBUGLN((currentDeviceCount+1));
     if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
     return addDevice(d);
@@ -325,22 +379,31 @@ public:
 
   bool addDevice(String deviceName, CallbackColFunction callback, uint8_t initialValue = 0)
   {
-    DEBUG("Constructing device ");
-    DEBUGLN((currentDeviceCount+1));
+    EA_DEBUG("Constructing device ");
+    EA_DEBUGLN((currentDeviceCount+1));
     if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
     return addDevice(d);
   }
   
-  bool handleAlexaApiCall(String req, String body) //basic implementation of Philips hue api functions needed for basic Alexa control
+  //basic implementation of Philips hue api functions needed for basic Alexa control
+  #ifdef ESPALEXA_ASYNC
+  bool handleAlexaApiCall(AsyncWebServerRequest* request)
   {
-    DEBUGLN("AlexaApiCall");
+    server = request; //copy request reference
+    String req = request->url(); //body from global variable
+  #else
+  bool handleAlexaApiCall(String req, String body)
+  {  
+  #endif
+    EA_DEBUGLN("AlexaApiCall");
     if (req.indexOf("api") <0) return false; //return if not an API call
-    DEBUGLN("ok");
-    
+    EA_DEBUGLN("ok");
+
     if (body.indexOf("devicetype") > 0) //client wants a hue api username, we dont care and give static
     {
-      DEBUGLN("devType");
+      EA_DEBUGLN("devType");
+      body = "";
       server->send(200, "application/json", "[{\"success\":{\"username\": \"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]");
       return true;
     }
@@ -350,7 +413,7 @@ public:
       server->send(200, "application/json", "[{\"success\":true}]"); //short valid response
     
       int tempDeviceId = req.substring(req.indexOf("lights")+7).toInt();
-      DEBUG("ls"); DEBUGLN(tempDeviceId);
+      EA_DEBUG("ls"); EA_DEBUGLN(tempDeviceId);
       if (body.indexOf("false")>0) {alexaOff(tempDeviceId); return true;}
       if (body.indexOf("bri")>0  ) {alexaDim(tempDeviceId, body.substring(body.indexOf("bri") +5).toInt()); return true;}
       if (body.indexOf("hue")>0  ) {alexaCol(tempDeviceId, body.substring(body.indexOf("hue") +5).toInt(), body.substring(body.indexOf("sat") +5).toInt()); return true;}
@@ -364,11 +427,11 @@ public:
     if (pos > 0) //client wants light info
     {
       int tempDeviceId = req.substring(pos+7).toInt();
-      DEBUG("l"); DEBUGLN(tempDeviceId);
+      EA_DEBUG("l"); EA_DEBUGLN(tempDeviceId);
 
       if (tempDeviceId == 0) //client wants all lights
       {
-        DEBUGLN("lAll");
+        EA_DEBUGLN("lAll");
         String jsonTemp = "{";
         for (int i = 0; i<currentDeviceCount; i++)
         {
@@ -391,9 +454,17 @@ public:
     return true;
   }
   
+  //is an unique device ID
   String getEscapedMac()
   {
     return escapedMac;
+  }
+  
+  //convert brightness (0-255) to percentage
+  uint8_t toPercent(uint8_t bri)
+  {
+    uint16_t perc = bri * 100;
+    return perc / 255;
   }
   
   ~Espalexa(){delete devices;} //note: Espalexa is NOT meant to be destructed
