@@ -80,6 +80,10 @@ You can find a complete example implementation in the examples folder. Just chan
 
 Espalexa uses an internal WebServer. You can got to `http://[yourEspIP]/espalexa` to see all devices and their current state.
 
+#### Can I get the "brightness" value in percent?
+
+`espalexa.toPercent(brightness);`!
+
 #### My devices are not found?!
 
 Confirm your ESP is connected. Go to the /espalexa subpage to confirm all your devices are defined.  
@@ -90,8 +94,8 @@ If you can, add `#define ESPALEXA_DEBUG` before `#include <Espalexa.h>` and incl
 
 #### The devices are found but I can't control them! They are always on!
 
-Please try using ESP8266 Arduino core version 2.3.0.
-If you have to use 2.4.0, see this [workaround](https://github.com/Aircoookie/Espalexa/issues/6#issuecomment-366533897).
+Please try using ESP8266 Arduino core version 2.3.0 or 2.5.0.
+If you have to use 2.4.x, see this [workaround](https://github.com/Aircoookie/Espalexa/issues/6#issuecomment-366533897) or use the async server (below).
 
 #### I tried to use this in my sketch that already uses an ESP8266WebServer, it doesn't work!
 
