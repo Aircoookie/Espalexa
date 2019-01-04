@@ -9,9 +9,9 @@ For example, you can say "Alexa, turn the light to 75% / 21 degrees".
 Alexa now finally supports colors with the local API! You can see how to add color devices in the EspalexaColor example.  
 Then, you can say "Alexa, turn the light to Blue". Color temperature (white shades) is also supported, but still a WIP.
 
-By default, it's possible to add up to a total of 10 devices (read below on how to increase the cap).
+By default, it's possible to add up to a total of 10 devices (read below on how to increase the cap).  
 Each device has a brightness range from 0 to 255, where 0 is off and 255 is fully on.
-You can get a percentage from that value using `espalexa.toPercent(brightness)`
+You can get a percentage from that value using `espalexa.toPercent(brightness);`
 
 #### How do I install the library?
 
@@ -79,10 +79,6 @@ String name = d->getName(); //just in case you forget it
 You can find a complete example implementation in the examples folder. Just change your WiFi info and try it out!
 
 Espalexa uses an internal WebServer. You can got to `http://[yourEspIP]/espalexa` to see all devices and their current state.
-
-#### Can I get the "brightness" value in percent?
-
-`espalexa.toPercent(brightness);`!
 
 #### My devices are not found?!
 
