@@ -66,26 +66,35 @@ uint32_t EspalexaDevice::getColorRGB()
   
   if (isColorTemperatureMode())
   {
-    //this is only an approximation using WS2812B with gamma correction enabled
-    //TODO replace with better formula
-    if (_ct > 475) {
-      rgb[0]=255;rgb[1]=199;rgb[2]=92;//500
-    } else if (_ct > 425) {
-      rgb[0]=255;rgb[1]=213;rgb[2]=118;//450
-    } else if (_ct > 375) {
-      rgb[0]=255;rgb[1]=216;rgb[2]=118;//400
-    } else if (_ct > 325) {
-      rgb[0]=255;rgb[1]=234;rgb[2]=140;//350
-    } else if (_ct > 275) {
-      rgb[0]=255;rgb[1]=243;rgb[2]=160;//300
-    } else if (_ct > 225) {
-      rgb[0]=250;rgb[1]=255;rgb[2]=188;//250
-    } else if (_ct > 175) {
-      rgb[0]=247;rgb[1]=255;rgb[2]=215;//200
+    //TODO tweak a bit to match hue lamp characteristics
+    //based on https://gist.github.com/paulkaplan/5184275
+    float temp = 10000/ _ct; //kelvins = 1,000,000/mired (and that /100)
+    float r, g, b;
+
+    if( temp <= 66 ){ 
+      r = 255; 
+      g = temp;
+      g = 99.470802 * log(g) - 161.119568;
+      if( temp <= 19){
+          b = 0;
+      } else {
+          b = temp-10;
+          b = 138.517731 * log(b) - 305.044793;
+      }
     } else {
-      rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
+      r = temp - 60;
+      r = 329.698727 * pow(r, -0.13320476);
+      g = temp - 60;
+      g = 288.12217 * pow(g, -0.07551485 );
+      b = 255;
     }
-  } else { //hue + sat mode
+    
+    rgb[0] = (byte)constrain(r,0.1,255.1);
+    rgb[1] = (byte)constrain(g,0.1,255.1);
+    rgb[2] = (byte)constrain(b,0.1,255.1);
+  } 
+  else
+  { //hue + sat mode
     float h = ((float)_hue)/65535.0;
     float s = ((float)_sat)/255.0;
     byte i = floor(h*6);

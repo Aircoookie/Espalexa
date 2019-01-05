@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.3.0
+ * @version 2.3.1
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -187,7 +187,6 @@ private:
     #ifdef ESPALEXA_ASYNC
     if (serverAsync == nullptr) {
       serverAsync = new AsyncWebServer(80);
-      //serverAsync->onRequestBody([=](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){server = request; serveNotFound();});
       serverAsync->onNotFound([=](AsyncWebServerRequest *request){server = request; serveNotFound();});
     }
     
@@ -392,6 +391,14 @@ public:
   {
     server = request; //copy request reference
     String req = request->url(); //body from global variable
+    if (body.length() == 0) //if first body method didn't work, try other
+    {
+      EA_DEBUG("BodyMethod2");
+      if (request->hasParam("body", true)) // This is necessary, otherwise ESP crashes if there is no body
+      body = request->getParam("body", true)->value();
+    }
+    EA_DEBUG("FinalBody: ");
+    EA_DEBUGLN(body);
   #else
   bool handleAlexaApiCall(String req, String body)
   {  
