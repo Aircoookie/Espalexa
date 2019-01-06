@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.3.1
+ * @version 2.3.2
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -46,7 +46,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.3.0 debug mode"
+ #pragma message "Espalexa 2.3.2 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -112,7 +112,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.3.0 by Christian Schwinne 2019";
+    res += "\r\n\r\nEspalexa library v2.3.2 by Christian Schwinne 2019";
     server->send(200, "text/plain", res);
   }
 
@@ -391,10 +391,9 @@ public:
   {
     server = request; //copy request reference
     String req = request->url(); //body from global variable
-    if (body.length() == 0) //if first body method didn't work, try other
+    if (request->hasParam("body", true)) // workaround should Alexa send incorrect content type
     {
       EA_DEBUG("BodyMethod2");
-      if (request->hasParam("body", true)) // This is necessary, otherwise ESP crashes if there is no body
       body = request->getParam("body", true)->value();
     }
     EA_DEBUG("FinalBody: ");
