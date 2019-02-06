@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.3.2
+ * @version 2.3.3
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -46,7 +46,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.3.2 debug mode"
+ #pragma message "Espalexa 2.3.3 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -112,7 +112,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.3.2 by Christian Schwinne 2019";
+    res += "\r\n\r\nEspalexa library v2.3.3 by Christian Schwinne 2019";
     server->send(200, "text/plain", res);
   }
 
@@ -222,6 +222,7 @@ private:
   void alexaOn(uint8_t deviceId)
   {
     devices[deviceId-1]->setValue(devices[deviceId-1]->getLastValue());
+    devices[deviceId-1]->setPropertyChanged(1);
     devices[deviceId-1]->doCallback();
   }
 
@@ -229,6 +230,7 @@ private:
   void alexaOff(uint8_t deviceId)
   {
     devices[deviceId-1]->setValue(0);
+    devices[deviceId-1]->setPropertyChanged(2);
     devices[deviceId-1]->doCallback();
   }
 
@@ -241,6 +243,7 @@ private:
     } else {
      devices[deviceId-1]->setValue(briL+1); 
     }
+    devices[deviceId-1]->setPropertyChanged(3);
     devices[deviceId-1]->doCallback();
   }
 
@@ -248,6 +251,7 @@ private:
   void alexaCol(uint8_t deviceId, uint16_t hue, uint8_t sat)
   {
     devices[deviceId-1]->setColor(hue, sat);
+    devices[deviceId-1]->setPropertyChanged(4);
     devices[deviceId-1]->doCallback();
   }
 
@@ -255,6 +259,7 @@ private:
   void alexaCt(uint8_t deviceId, uint16_t ct)
   {
     devices[deviceId-1]->setColor(ct);
+    devices[deviceId-1]->setPropertyChanged(5);
     devices[deviceId-1]->doCallback();
   }
 
@@ -346,6 +351,7 @@ public:
     if (len > 0) {
       packetBuffer[len] = 0;
     }
+    espalexaUdp.flush();
 
     String request = packetBuffer;
     EA_DEBUGLN(request);
@@ -391,7 +397,8 @@ public:
   {
     server = request; //copy request reference
     String req = request->url(); //body from global variable
-    if (request->hasParam("body", true)) // workaround should Alexa send incorrect content type
+    EA_DEBUGLN(request->contentType());
+    if (request->hasParam("body", true)) // This is necessary, otherwise ESP crashes if there is no body
     {
       EA_DEBUG("BodyMethod2");
       body = request->getParam("body", true)->value();

@@ -13,6 +13,7 @@ private:
   CallbackColFunction _callbackCol;
   uint8_t _val, _val_last, _sat = 0;
   uint16_t _hue = 0, _ct = 0;
+  uint8_t _changed = 0;
   
 public:
   EspalexaDevice();
@@ -23,12 +24,14 @@ public:
   bool isColorDevice();
   bool isColorTemperatureMode();
   String getName();
+  uint8_t getLastChangedProperty();
   uint8_t getValue();
   uint16_t getHue();
   uint8_t getSat();
   uint16_t getCt();
   uint32_t getColorRGB();
   
+  void setPropertyChanged(uint8_t p);
   void setValue(uint8_t bri);
   void setPercent(uint8_t perc);
   void setName(String name);

@@ -39,6 +39,11 @@ String EspalexaDevice::getName()
   return _deviceName;
 }
 
+uint8_t EspalexaDevice::getLastChangedProperty()
+{
+  return _changed;
+}
+
 uint8_t EspalexaDevice::getValue()
 {
   return _val;
@@ -118,6 +123,12 @@ uint8_t EspalexaDevice::getLastValue()
 {
   if (_val_last == 0) return 255;
   return _val_last;
+}
+
+void EspalexaDevice::setPropertyChanged(uint8_t p)
+{
+  //0: initial 1: on 2: off 3: bri 4: col 5: ct
+  _changed = p;
 }
 
 //you need to re-discover the device for the Alexa name to change
