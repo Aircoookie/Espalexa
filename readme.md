@@ -4,7 +4,7 @@ Now compatible with both ESP8266 and ESP32!
 
 #### What does this do similar projects don't already?
 
-It allows you to set a ranged value (e.g. Brightness, Temperature) additionally to standard on/off control.
+It allows you to set a ranged value (e.g. Brightness, Temperature) and optionally a color, additionally to standard on/off control.
 For example, you can say "Alexa, turn the light to 75% / 21 degrees".  
 Alexa now finally supports colors with the local API! You can see how to add color devices in the EspalexaColor example.  
 Then, you can say "Alexa, turn the light to Blue". Color temperature (white shades) is also supported.

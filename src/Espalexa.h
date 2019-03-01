@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.4.0
+ * @version 2.4.1
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -49,7 +49,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.4.0 debug mode"
+ #pragma message "Espalexa 2.4.1 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -174,7 +174,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.4.0 by Christian Schwinne 2019";
+    res += "\r\n\r\nEspalexa library v2.4.1 by Christian Schwinne 2019";
     server->send(200, "text/plain", res);
   }
   #endif
@@ -386,7 +386,7 @@ public:
     return true;
   }
   
-  //deprecated brightness-only callback
+  //brightness-only callback
   bool addDevice(String deviceName, BrightnessCallbackFunction callback, uint8_t initialValue = 0)
   {
     EA_DEBUG("Constructing device ");
@@ -395,6 +395,17 @@ public:
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
     return addDevice(d);
   }
+  
+  //brightness-only callback
+  bool addDevice(String deviceName, ColorCallbackFunction callback, uint8_t initialValue = 0)
+  {
+    EA_DEBUG("Constructing device ");
+    EA_DEBUGLN((currentDeviceCount+1));
+    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
+    EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
+    return addDevice(d);
+  }
+
 
   bool addDevice(String deviceName, DeviceCallbackFunction callback, EspalexaDeviceType t = EspalexaDeviceType::dimmable, uint8_t initialValue = 0)
   {
