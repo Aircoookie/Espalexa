@@ -8,3 +8,4 @@
 
 Espalexa	KEYWORD1
 EspalexaDevice	KEYWORD1
+EspalexaDeviceType	KEYWORD1

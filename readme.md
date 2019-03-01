@@ -1,17 +1,19 @@
 ## Espalexa allows you to easily control your ESP with the Alexa voice assistant.
-It comes in an easy to use Arduino library or as a standalone example sketch.
+It comes in an easy to use Arduino library.
 Now compatible with both ESP8266 and ESP32!
 
-#### What does this do similar projects like Fauxmo don't already?
+#### What does this do similar projects don't already?
 
 It allows you to set a ranged value (e.g. Brightness, Temperature) additionally to standard on/off control.
 For example, you can say "Alexa, turn the light to 75% / 21 degrees".  
 Alexa now finally supports colors with the local API! You can see how to add color devices in the EspalexaColor example.  
-Then, you can say "Alexa, turn the light to Blue". Color temperature (white shades) is also supported, but still a WIP.
+Then, you can say "Alexa, turn the light to Blue". Color temperature (white shades) is also supported.
 
 By default, it's possible to add up to a total of 10 devices (read below on how to increase the cap).  
 Each device has a brightness range from 0 to 255, where 0 is off and 255 is fully on.
 You can get a percentage from that value using `espalexa.toPercent(brightness);`
+
+FauxmoESP now also supports dimming!
 
 #### How do I install the library?
 
@@ -80,18 +82,35 @@ You can find a complete example implementation in the examples folder. Just chan
 
 Espalexa uses an internal WebServer. You can got to `http://[yourEspIP]/espalexa` to see all devices and their current state.
 
+#### What devices types and Echos does Espalexa support?
+
+The library aims to work with every Echo on the market, but there are a few things to look out for.  
+Espalexa only works with a genuine Echo speaker, it probably wont work with Echo emulators, RPi homebrew devices or just the standalone app.  
+On an Echo Dot 1st and 2nd gen and the first gen Echo, color temperature adjustment (white spectrum) does not work as of March 2019.   
+
+Here is an overview of the devices (light types) Espalexa can emulate:  
+
+| Device type                              | Notes                                           |
+|------------------------------------------|-------------------------------------------------|
+| EspalexaDeviceType::dimmable             | Works as intended (dimming)                     |
+| EspalexaDeviceType::whitespectrum        | Color temperature adjustment not working on Dot |
+| EspalexaDeviceType::color                | Works as intended (dimming + color)             |
+| EspalexaDeviceType::extendedcolor        | Color temperature adjustment not working on Dot |
+| EspalexaDeviceType::onoff (experimental) | No control from app possible, only voice        |
+
+See the example `EspalexaFullyFeatured` to learn how to define each device type and use the new EspalexaDevice pointer callback function type!
+
 #### My devices are not found?!
 
 Confirm your ESP is connected. Go to the /espalexa subpage to confirm all your devices are defined.  
-Check your router configuration. Espalexa might need to have UPnP enabled for discovery to work.  
 Then ask Alexa to discover devices again or try it via the Alexa app.  
 If nothing helps, open a Github issue and we will help.  
 If you can, add `#define ESPALEXA_DEBUG` before `#include <Espalexa.h>` and include the serial monitor output that is printed while the issue occurs.  
 
 #### The devices are found but I can't control them! They are always on!
 
-Please try using ESP8266 Arduino core version 2.3.0 or 2.5.0.
-If you have to use 2.4.x, see this [workaround](https://github.com/Aircoookie/Espalexa/issues/6#issuecomment-366533897) or use the async server (below).
+This is a known issue that occurs when using an Echo Dot (1st and 2nd gen). Please try using ESP8266 Arduino core version 2.3.0.
+If you want to use a newer core, I recommend the async server mode (see example) or use this [workaround](https://github.com/Aircoookie/Espalexa/issues/6#issuecomment-366533897).
 
 #### I tried to use this in my sketch that already uses an ESP8266WebServer, it doesn't work!
 
@@ -113,7 +132,7 @@ server.onNotFound([](){
 
 #### Does this library work with ESPAsyncWebServer?
 
-Yes! In v2.3.0 you can use the library asyncronously by adding `#define ESPALEXA_ASYNC` before `#include <Espalexa.h>`  
+Yes! From v2.3.0 you can use the library asyncronously by adding `#define ESPALEXA_ASYNC` before `#include <Espalexa.h>`  
 See the  `EspalexaWithAsyncWebServer` example.  
 `ESPAsyncWebServer` and its dependencies must be manually installed.  
 
@@ -126,12 +145,6 @@ I recommend setting MAXDEVICES to the exact number of devices you want to add to
 #### How does this work?
 
 Espalexa emulates parts of the SSDP protocol and the Philips hue API, just enough so it can be discovered and controlled by Alexa.
-This sketch is basically cobbled together from:
+Parts of the code are based on:
 - [arduino-esp8266-alexa-wemo-switch](https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch) by kakopappa (Foundation)
 - [ESP8266HueEmulator](https://github.com/probonopd/ESP8266HueEmulator) by probonopd
-- Several hours of forensic SSDP and Hue protocol Wireshark work
-
-This is a more generalized version of the file wled12_alexa.ino in my main ESP lighting project [WLED](https://github.com/Aircoookie/WLED).
-
-Espalexa only works with a genuine Echo device, it probably wont work with Echo emulators or RPi homebrew devices.
-You only need the src/dependencies folder if you compile for ESP32!
