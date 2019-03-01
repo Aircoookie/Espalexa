@@ -104,6 +104,7 @@ See the example `EspalexaFullyFeatured` to learn how to define each device type 
 
 Confirm your ESP is connected. Go to the /espalexa subpage to confirm all your devices are defined.  
 Then ask Alexa to discover devices again or try it via the Alexa app.  
+Often, it also helps to reboot your Echo once!  
 If nothing helps, open a Github issue and we will help.  
 If you can, add `#define ESPALEXA_DEBUG` before `#include <Espalexa.h>` and include the serial monitor output that is printed while the issue occurs.  
 
