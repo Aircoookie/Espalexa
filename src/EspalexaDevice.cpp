@@ -27,6 +27,7 @@ EspalexaDevice::EspalexaDevice(String deviceName, DeviceCallbackFunction gnCallb
   _deviceName = deviceName;
   _callbackDev = gnCallback;
   _type = t;
+  if (t == EspalexaDeviceType::onoff) _type = EspalexaDeviceType::dimmable; //on/off is broken, so make dimmable device instead
   _val = initialValue;
   _val_last = _val;
 }
