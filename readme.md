@@ -133,7 +133,7 @@ server.onNotFound([](){
 
 #### Does this library work with ESPAsyncWebServer?
 
-Yes! From v2.3.0 you can use the library asyncronously by adding `#define ESPALEXA_ASYNC` before `#include <Espalexa.h>`  
+Yes! From v2.3.0 you can use the library asynchronously by adding `#define ESPALEXA_ASYNC` before `#include <Espalexa.h>`  
 See the  `EspalexaWithAsyncWebServer` example.  
 `ESPAsyncWebServer` and its dependencies must be manually installed.  
 
