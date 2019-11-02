@@ -453,7 +453,7 @@ public:
 
     if (req.indexOf("state") > 0) //client wants to control light
     {
-      server->send(200, "application/json", "[{\"success\":true}]"); //short valid response
+      server->send(200, "application/json", "[{\"success\":{\"/lights/1/state/\": true}}]");
 
       uint32_t devId = req.substring(req.indexOf("lights")+7).toInt();
       EA_DEBUG("ls"); EA_DEBUGLN(devId);
