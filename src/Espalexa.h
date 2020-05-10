@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.4.6
+ * @version 2.4.7
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -49,7 +49,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.4.6 debug mode"
+ #pragma message "Espalexa 2.4.7 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -157,7 +157,7 @@ private:
     
     sprintf_P(buf, PSTR("{\"state\":{\"on\":%s,\"bri\":%u%s%s,\"alert\":\"none%s\",\"mode\":\"homeautomation\",\"reachable\":true},"
                    "\"type\":\"%s\",\"name\":\"%s\",\"modelid\":\"%s\",\"manufacturername\":\"Philips\",\"productname\":\"E%u"
-                   "\",\"uniqueid\":\"%u\",\"swversion\":\"espalexa-2.4.6\"}")
+                   "\",\"uniqueid\":\"%u\",\"swversion\":\"espalexa-2.4.7\"}")
                    
     , (dev->getValue())?"true":"false", dev->getLastValue()-1, buf_col, buf_ct, buf_cm, typeString(dev->getType()),
     dev->getName().c_str(), modelidString(dev->getType()), static_cast<uint8_t>(dev->getType()), encodeLightId(deviceId+1));
@@ -182,7 +182,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.4.6 by Christian Schwinne 2020";
+    res += "\r\n\r\nEspalexa library v2.4.7 by Christian Schwinne 2020";
     server->send(200, "text/plain", res);
   }
   #endif
@@ -299,7 +299,7 @@ private:
 
     espalexaUdp.beginPacket(espalexaUdp.remoteIP(), espalexaUdp.remotePort());
     #ifdef ARDUINO_ARCH_ESP32
-    espalexaUdp.write((uint8_t*)buf, response.length());
+    espalexaUdp.write((uint8_t*)buf, strlen(buf));
     #else
     espalexaUdp.write(buf);
     #endif
