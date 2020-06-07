@@ -65,6 +65,11 @@ uint8_t EspalexaDevice::getValue()
   return _val;
 }
 
+bool EspalexaDevice::getState()
+{
+  return _val;
+}
+
 uint8_t EspalexaDevice::getPercent()
 {
   uint16_t perc = _val * 100;
@@ -276,6 +281,16 @@ void EspalexaDevice::setValue(uint8_t val)
     _val_last = val;
   }
   _val = val;
+}
+
+void EspalexaDevice::setState(bool onoff)
+{
+  if (onoff) 
+  {
+    setValue(_val_last);
+  } else {
+    setValue(0);
+  }
 }
 
 void EspalexaDevice::setPercent(uint8_t perc)
