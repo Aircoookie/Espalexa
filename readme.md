@@ -3,11 +3,11 @@ It comes in an easy to use Arduino library.
 Now compatible with both ESP8266 and ESP32!
 
 ### ⚠️ This library is currently not actively maintained
-I've received plenty of bug reports about discovery or control failing.  
+**I've received plenty of bug reports about discovery or control failing.  
 I hope to get back to it at some point, but currently I can't guarantee this library will work for you in any way.  
-You can of course give it a try, but consider this as broken by default.  
+You can of course give it a try, but consider this as broken by default.**   
 Sorry for the inconvenience. If you manage to improve upon Espalexa's current state, I will happily accept a pull request!  
-Thank you!
+Thank you! _(one thing some reported as working for discovery issues is rebooting your Echo device and discovering devices immediately after)_
 
 #### What does this do similar projects don't already?
 
