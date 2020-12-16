@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.4.7
+ * @version 2.5.0
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -49,7 +49,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.4.7 debug mode"
+ #pragma message "Espalexa 2.5.0 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -165,7 +165,7 @@ private:
     
     sprintf_P(buf, PSTR("{\"state\":{\"on\":%s,\"bri\":%u%s%s,\"alert\":\"none%s\",\"mode\":\"homeautomation\",\"reachable\":true},"
                    "\"type\":\"%s\",\"name\":\"%s\",\"modelid\":\"%s\",\"manufacturername\":\"Philips\",\"productname\":\"E%u"
-                   "\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.4.7\"}")
+                   "\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.5.0\"}")
                    
     , (dev->getValue())?"true":"false", dev->getLastValue()-1, buf_col, buf_ct, buf_cm, typeString(dev->getType()),
     dev->getName().c_str(), modelidString(dev->getType()), static_cast<uint8_t>(dev->getType()), encodeLightId(deviceId+1).c_str());
@@ -190,7 +190,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.4.7 by Christian Schwinne 2020";
+    res += "\r\n\r\nEspalexa library v2.5.0 by Christian Schwinne 2020";
     server->send(200, "text/plain", res);
   }
   #endif
