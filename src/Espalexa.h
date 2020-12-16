@@ -116,24 +116,24 @@ private:
     return "";
   }
   
-  String encodeLightId(uint8_t idx)
+  void encodeLightId(uint8_t idx, char* out)
   {
-    String mac = WiFi.macAddress();
-    mac.replace(":","");
-    mac.toLowerCase();
-
     //Unique id must be 12 character len
-    //use the first part of the MAC followed by the device id in hex value
+    //use the last 10 characters of the MAC followed by the device id in hex value
     //uniqueId: aabbccddeeii
-    String uniqueId = mac.substring(0, DEVICE_UNIQUE_ID_LENGTH - 2);
-    char bufIdx[3];
-    snprintf(bufIdx, sizeof(bufIdx), "%.*x", 2, idx);
-    uniqueId.concat(bufIdx, strlen(bufIdx));
-    return uniqueId;
-  }
 
-  uint32_t decodeLightId(uint32_t id) {
-    return id & 0xF;
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+
+    //shift the mac address to the left (discard first byte)
+    for (uint8_t i = 0; i < 5; i++) {
+      mac[i] = mac[i+1];
+    }
+    mac[5] = idx;
+
+    for (uint8_t i = 0; i < 6; i++) {
+      sprintf(out + i*2, "%.2x", mac[i]);
+    }
   }
   
   //device JSON string: color+temperature device emulates LCT015, dimmable device LWB010, (TODO: on/off Plug 01, color temperature device LWT010, color device LST001)
@@ -143,10 +143,8 @@ private:
     if (deviceId >= currentDeviceCount) {strcpy(buf,"{}"); return;} //error
     EspalexaDevice* dev = devices[deviceId];
     
-    //char buf_bri[12] = "";
-    //brightness support, add "bri" to JSON
-    //if (dev->getType() != EspalexaDeviceType::onoff) 
-    //  sprintf(buf_bri,",\"bri\":%u", dev->getLastValue()-1);
+    char buf_lightid[13];
+    encodeLightId(deviceId + 1, buf_lightid);
     
     char buf_col[80] = "";
     //color support
@@ -168,7 +166,7 @@ private:
                    "\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.5.0\"}")
                    
     , (dev->getValue())?"true":"false", dev->getLastValue()-1, buf_col, buf_ct, buf_cm, typeString(dev->getType()),
-    dev->getName().c_str(), modelidString(dev->getType()), static_cast<uint8_t>(dev->getType()), encodeLightId(deviceId+1).c_str());
+    dev->getName().c_str(), modelidString(dev->getType()), static_cast<uint8_t>(dev->getType()), buf_lightid);
   }
   
   //Espalexa status page /espalexa
@@ -226,7 +224,7 @@ private:
         "<URLBase>http://%s:80/</URLBase>"
         "<device>"
           "<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>"
-          "<friendlyName>Philips hue (%s:80)</friendlyName>"
+          "<friendlyName>Espalexa (%s:80)</friendlyName>"
           "<manufacturer>Royal Philips Electronics</manufacturer>"
           "<manufacturerURL>http://www.philips.com</manufacturerURL>"
           "<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>"
@@ -363,30 +361,28 @@ public:
     
     if (!udpConnected) return;   
     int packetSize = espalexaUdp.parsePacket();    
-    if (!packetSize) return; //no new udp packet
+    if (packetSize < 1) return; //no new udp packet
     
     EA_DEBUGLN("Got UDP!");
-    if (packetSize > 0) {
-      unsigned char packetBuffer[packetSize+1]; //buffer to hold incoming udp packet
-      int len = espalexaUdp.read(packetBuffer, packetSize+1);
-      packetBuffer[packetSize] = 0;
-    
-      espalexaUdp.flush();
-      if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
-    
-      String request = (const char *) packetBuffer;
-      if(request.indexOf("M-SEARCH") >= 0) {
-        EA_DEBUGLN(request);
-        if(request.indexOf("ssdp:discover") > 0 && 
-           (request.indexOf("upnp:rootdevice") > 0 || 
-            //request.indexOf("asic:1") > 0 ||
-            request.indexOf("ssdp:all") > 0 ||
-            request.indexOf("device:basic:1") > 0 ))
-        {
-          EA_DEBUGLN("Responding search req...");
-          respondToSearch();
-        }
-      }
+
+    unsigned char packetBuffer[packetSize+1]; //buffer to hold incoming udp packet
+    espalexaUdp.read(packetBuffer, packetSize);
+    packetBuffer[packetSize] = 0;
+  
+    espalexaUdp.flush();
+    if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
+  
+    const char* request = (const char *) packetBuffer;
+    if (strstr(request, "M-SEARCH") == nullptr) return;
+
+    EA_DEBUGLN(request);
+    if (strstr(request, "ssdp:disc")  != nullptr &&  //short for "ssdp:discover"
+        (strstr(request, "upnp:rootd") != nullptr || //short for "upnp:rootdevice"
+         strstr(request, "ssdp:all")   != nullptr ||
+         strstr(request, "asic:1")     != nullptr )) //short for "device:basic:1"
+    {
+      EA_DEBUGLN("Responding search req...");
+      respondToSearch();
     }
   }
 
@@ -594,7 +590,7 @@ public:
     return perc / 255;
   }
   
-  ~Espalexa(){delete devices;} //note: Espalexa is NOT meant to be destructed
+  ~Espalexa(){} //note: Espalexa is NOT meant to be destructed
 };
 
 #endif
