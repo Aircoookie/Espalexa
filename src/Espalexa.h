@@ -386,48 +386,55 @@ public:
     }
   }
 
-  bool addDevice(EspalexaDevice* d)
+  // returns device ID or 0 on failure
+  uint8_t addDevice(EspalexaDevice* d)
   {
     EA_DEBUG("Adding device ");
     EA_DEBUGLN((currentDeviceCount+1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
-    if (d == nullptr) return false;
+    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return 0;
+    if (d == nullptr) return 0;
     d->setId(currentDeviceCount);
     devices[currentDeviceCount] = d;
-    currentDeviceCount++;
-    return true;
+    return ++currentDeviceCount;
   }
   
   //brightness-only callback
-  bool addDevice(String deviceName, BrightnessCallbackFunction callback, uint8_t initialValue = 0)
+  uint8_t addDevice(String deviceName, BrightnessCallbackFunction callback, uint8_t initialValue = 0)
   {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount+1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
+    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return 0;
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
     return addDevice(d);
   }
   
   //brightness-only callback
-  bool addDevice(String deviceName, ColorCallbackFunction callback, uint8_t initialValue = 0)
+  uint8_t addDevice(String deviceName, ColorCallbackFunction callback, uint8_t initialValue = 0)
   {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount+1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
+    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return 0;
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
     return addDevice(d);
   }
 
 
-  bool addDevice(String deviceName, DeviceCallbackFunction callback, EspalexaDeviceType t = EspalexaDeviceType::dimmable, uint8_t initialValue = 0)
+  uint8_t addDevice(String deviceName, DeviceCallbackFunction callback, EspalexaDeviceType t = EspalexaDeviceType::dimmable, uint8_t initialValue = 0)
   {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount+1));
-    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
+    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return 0;
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, t, initialValue);
     return addDevice(d);
   }
-  
+
+  void renameDevice(uint8_t id, const String& deviceName)
+  {
+    unsigned int index = id - 1;
+    if (index < currentDeviceCount)
+      devices[index]->setName(deviceName);
+  }
+
   //basic implementation of Philips hue api functions needed for basic Alexa control
   #ifdef ESPALEXA_ASYNC
   bool handleAlexaApiCall(AsyncWebServerRequest* request)
