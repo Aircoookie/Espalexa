@@ -116,8 +116,7 @@ uint32_t EspalexaDevice::getKelvin()
 uint32_t EspalexaDevice::getRGB()
 {
   if (_rgb != 0) return _rgb; //color has not changed
-  byte rgb[4]{0, 0, 0, 0}; 
-  float r, g, b, w;
+  byte rgb[4]{0, 0, 0, 0};
   
   if (_mode == EspalexaColorMode::none) return 0;
 
