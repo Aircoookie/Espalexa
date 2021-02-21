@@ -197,15 +197,7 @@ private:
   void serveNotFound()
   {
     EA_DEBUGLN("Not-Found HTTP call:");
-    #ifndef ESPALEXA_ASYNC
-    EA_DEBUGLN("URI: " + server->uri());
-    EA_DEBUGLN("Body: " + server->arg(0));
-    if(!handleAlexaApiCall(server->uri(), server->arg(0)))
-    #else
-    EA_DEBUGLN("URI: " + server->url());
-    EA_DEBUGLN("Body: " + body);
     if(!handleAlexaApiCall(server))
-    #endif
       server->send(404, "text/plain", "Not Found (espalexa)");
   }
 
@@ -264,6 +256,7 @@ private:
     serverAsync->on("/espalexa", HTTP_GET, [=](AsyncWebServerRequest *request){server = request; servePage();});
     #endif
     serverAsync->on("/description.xml", HTTP_GET, [=](AsyncWebServerRequest *request){server = request; serveDescription();});
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     serverAsync->begin();
     
     #else
@@ -273,6 +266,7 @@ private:
       #else
       server = new ESP8266WebServer(80);  
       #endif
+      server->enableCORS(true);
       server->onNotFound([=](){serveNotFound();});
     }
 
@@ -437,25 +431,44 @@ public:
 
   //basic implementation of Philips hue api functions needed for basic Alexa control
   #ifdef ESPALEXA_ASYNC
-  bool handleAlexaApiCall(AsyncWebServerRequest* request)
+  bool handleAlexaApiCall(AsyncWebServerRequest* server)
+  #elif defined ARDUINO_ARCH_ESP32
+  bool handleAlexaApiCall(WebServer* server)
+  #else
+  bool handleAlexaApiCall(ESP8266WebServer* server)
+  #endif
   {
-    server = request; //copy request reference
-    String req = request->url(); //body from global variable
-    EA_DEBUGLN(request->contentType());
-    if (request->hasParam("body", true)) // This is necessary, otherwise ESP crashes if there is no body
+    #ifdef ESPALEXA_ASYNC
+    String req = server->url(); //body from global variable
+    if (server->hasParam("body", true)) // This is necessary, otherwise ESP crashes if there is no body
     {
       EA_DEBUG("BodyMethod2");
-      body = request->getParam("body", true)->value();
+      body = server->getParam("body", true)->value();
     }
-    EA_DEBUG("FinalBody: ");
-    EA_DEBUGLN(body);
-  #else
-  bool handleAlexaApiCall(String req, String body)
-  {  
-  #endif
+    #else
+    String req = server->uri();
+    body = server->arg(0);
+    #endif
+    
     EA_DEBUGLN("AlexaApiCall");
+    EA_DEBUGLN("URI: " + req);
+    EA_DEBUGLN("Body: " + body);
     if (req.indexOf("api") <0) return false; //return if not an API call
     EA_DEBUGLN("ok");
+
+    if (server->method() == HTTP_OPTIONS)
+    {
+      EA_DEBUGLN("OPTIONS");
+      #ifdef ESPALEXA_ASYNC
+      AsyncWebServerResponse *response = server->beginResponse(204);
+      response->addHeader("Access-Control-Allow-Methods", "GET,PUT");
+      server->send(response);
+      #else
+      server->sendHeader("Access-Control-Allow-Methods", "GET,PUT");
+      server->send(204);
+      #endif
+      return true;
+    }
 
     if (body.indexOf("devicetype") > 0) //client wants a hue api username, we don't care and give static
     {
