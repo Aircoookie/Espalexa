@@ -243,7 +243,7 @@ private:
       serverAsync = new AsyncWebServer(80);
       serverAsync->onNotFound([=](AsyncWebServerRequest *request){server = request; serveNotFound();});
     }
-    
+
     serverAsync->onRequestBody([=](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       char b[len +1];
       b[len] = 0;
@@ -266,7 +266,6 @@ private:
       #else
       server = new ESP8266WebServer(80);  
       #endif
-      server->enableCORS(true);
       server->onNotFound([=](){serveNotFound();});
     }
 
@@ -274,6 +273,7 @@ private:
     server->on("/espalexa", HTTP_GET, [=](){servePage();});
     #endif
     server->on("/description.xml", HTTP_GET, [=](){serveDescription();});
+    server->enableCORS(true);
     server->begin();
     #endif
   }
@@ -447,7 +447,7 @@ public:
     }
     #else
     String req = server->uri();
-    body = server->arg(0);
+    String body = server->arg(0);
     #endif
     
     EA_DEBUGLN("AlexaApiCall");
@@ -486,7 +486,10 @@ public:
       EA_DEBUG("ls"); EA_DEBUGLN(devId);
       EA_DEBUGLN(devId);
       devId--; //zero-based for devices array
-      if (devId >= currentDeviceCount) return true; //return if invalid ID
+      if (devId >= currentDeviceCount) { //return if invalid ID
+        EA_DEBUGLN("devId is invalid");
+        return true; 
+      }
       
       devices[devId]->setPropertyChanged(EspalexaDeviceProperty::none);
       
@@ -494,8 +497,6 @@ public:
       {
         devices[devId]->setValue(0);
         devices[devId]->setPropertyChanged(EspalexaDeviceProperty::off);
-        devices[devId]->doCallback();
-        return true;
       }
       
       if (body.indexOf("true") >0) //ON command
