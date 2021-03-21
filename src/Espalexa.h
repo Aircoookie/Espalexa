@@ -119,10 +119,7 @@ private:
   
   void encodeLightId(uint8_t idx, char* out)
   {
-    //Unique id must be 12 character len
-    //use the last 10 characters of the MAC followed by the device id in hex value
-    //uniqueId: aabbccddeeii
-
+    
     uint8_t mac[6];
     WiFi.macAddress(mac);
 
