@@ -126,15 +126,8 @@ private:
     uint8_t mac[6];
     WiFi.macAddress(mac);
 
-    //shift the mac address to the left (discard first byte)
-    for (uint8_t i = 0; i < 5; i++) {
-      mac[i] = mac[i+1];
-    }
-    mac[5] = idx;
+    sprintf(out, "%2X:%2X:%2X:%2X:%2X:%2X:00:11-%02X", mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], idx);
 
-    for (uint8_t i = 0; i < 6; i++) {
-      sprintf(out + i*2, "%.2x", mac[i]);
-    }
   }
 
   // construct 'globally unique' Json dict key fitting into signed int
@@ -153,7 +146,7 @@ private:
   //device JSON string: color+temperature device emulates LCT015, dimmable device LWB010, (TODO: on/off Plug 01, color temperature device LWT010, color device LST001)
   void deviceJsonString(EspalexaDevice* dev, char* buf)
   {
-    char buf_lightid[13];
+    char buf_lightid[27];
     encodeLightId(dev->getId() + 1, buf_lightid);
     
     char buf_col[80] = "";
