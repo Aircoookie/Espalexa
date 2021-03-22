@@ -1,6 +1,6 @@
 {
 "name": "Espalexa",
-"version": "2.6.0",
+"version": "2.7.0",
 "frameworks": "Arduino",
 "keywords": "alexa, esp32, esp8266, control, dimming, echo, color, async",
 "description": "Library to control an ESP module with the Alexa voice assistant",

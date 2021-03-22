@@ -13,7 +13,9 @@ By default, it's possible to add up to a total of 10 devices (read below on how 
 Each device has a brightness range from 0 to 255, where 0 is off and 255 is fully on.
 You can get a percentage from that value using `espalexa.toPercent(brightness);`
 
-FauxmoESP now also supports dimming!
+[FauxmoESP](https://github.com/vintlabs/fauxmoESP) is now a great alternative that also supports dimming and setting colors!
+
+**⚠️ Do not use Espalexa in a production environment! The API utilized is known to not be permanently stable and may cease functioning at any point.**
 
 #### How do I install the library?
 
