@@ -126,7 +126,7 @@ Then, change `espalexa.begin()` to `espalexa.begin(&server)`.
 Finally, add this piece of code below your `server.on()` page definitions:
 ```cpp
 server.onNotFound([](){
-	if (!espalexa.handleAlexaApiCall(server.uri(),server.arg(0)))
+	if (!espalexa.handleAlexaApiCall(&server))
 	{
 		server.send(404, "text/plain", "Not found");
 	}

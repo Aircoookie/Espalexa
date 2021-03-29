@@ -43,7 +43,7 @@ void setup()
     server.send(200, "text/plain", "This is a second subpage you may have.");
     });
     server.onNotFound([](){
-      if (!espalexa.handleAlexaApiCall(server.uri(),server.arg(0))) //if you don't know the URI, ask espalexa whether it is an Alexa control request
+      if (!espalexa.handleAlexaApiCall(&server)) //if you don't know the URI, ask espalexa whether it is an Alexa control request
       {
         //whatever you want to do with 404s
         server.send(404, "text/plain", "Not found");
