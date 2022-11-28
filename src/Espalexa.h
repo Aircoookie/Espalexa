@@ -32,7 +32,9 @@
 
 #ifdef ESPALEXA_ASYNC
  #ifdef ARDUINO_ARCH_ESP32
+  #define USE_ESP32_ASYNC_UDP
   #include <AsyncTCP.h>
+  #include <AsyncUDP.h>
  #else
   #include <ESPAsyncTCP.h>
  #endif
@@ -46,15 +48,19 @@
   #include <ESP8266WiFi.h>
  #endif
 #endif
-#include <WiFiUdp.h>
+#ifndef USE_ESP32_ASYNC_UDP
+  #include <WiFiUdp.h>
+#endif
 
 #ifdef ESPALEXA_DEBUG
  #pragma message "Espalexa 2.7.0 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
+ #define EA_DEBUGBUF(buf,len)  Serial.write(buf, len)
 #else
  #define EA_DEBUG(x)
  #define EA_DEBUGLN(x)
+ #define EA_DEBUGBUF(buf,len)
 #endif
 
 #include "EspalexaDevice.h"
@@ -79,8 +85,11 @@ private:
 
   EspalexaDevice* devices[ESPALEXA_MAXDEVICES] = {};
   //Keep in mind that Device IDs go from 1 to DEVICES, cpp arrays from 0 to DEVICES-1!!
-  
+  #ifdef USE_ESP32_ASYNC_UDP
+  AsyncUDP espalexaUdp;  
+  #else
   WiFiUDP espalexaUdp;
+  #endif
   IPAddress ipMulti;
   uint32_t mac24; //bottom 24 bits of mac
   String escapedMac=""; //lowercase mac address
@@ -283,7 +292,7 @@ private:
   }
 
   //respond to UDP SSDP M-SEARCH
-  void respondToSearch()
+  void respondToSearch(IPAddress remoteIP, uint16_t remotePort)
   {
     IPAddress localIP = WiFi.localIP();
     char s[16];
@@ -301,13 +310,17 @@ private:
       "USN: uuid:2f402f80-da50-11e1-9b23-%s::upnp:rootdevice\r\n" // _uuid::_deviceType
       "\r\n"),s,escapedMac.c_str(),escapedMac.c_str());
 
-    espalexaUdp.beginPacket(espalexaUdp.remoteIP(), espalexaUdp.remotePort());
-    #ifdef ARDUINO_ARCH_ESP32
-    espalexaUdp.write((uint8_t*)buf, strlen(buf));
+    #ifdef USE_ESP32_ASYNC_UDP
+        espalexaUdp.writeTo((uint8_t*)buf, strlen(buf), remoteIP, remotePort);
     #else
-    espalexaUdp.write(buf);
+        espalexaUdp.beginPacket(remoteIP, remotePort);
+        #ifdef ARDUINO_ARCH_ESP32
+        espalexaUdp.write((uint8_t*)buf, strlen(buf));
+        #else
+        espalexaUdp.write(buf);
+        #endif
+        espalexaUdp.endPacket();
     #endif
-    espalexaUdp.endPacket();                    
   }
 
 public:
@@ -337,10 +350,26 @@ public:
     #else
     server = externalServer;
     #endif
-    #ifdef ARDUINO_ARCH_ESP32
-    udpConnected = espalexaUdp.beginMulticast(IPAddress(239, 255, 255, 250), 1900);
+    #ifdef USE_ESP32_ASYNC_UDP
+        udpConnected = espalexaUdp.listenMulticast(IPAddress(239, 255, 255, 250), 1900);
+        if (udpConnected)
+        { 
+            espalexaUdp.onPacket([this](AsyncUDPPacket packet) {
+                EA_DEBUG("UDP packet Length: ");
+                EA_DEBUG(packet.length());
+                EA_DEBUGLN(", Data:");
+                EA_DEBUGBUF(packet.data(), packet.length());
+                EA_DEBUGLN("");
+
+                HandleUdpPacket(packet.data(), packet.length(), packet.remoteIP(), packet.remotePort());
+            });
+        }
     #else
-    udpConnected = espalexaUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 255, 255, 250), 1900);
+        #ifdef ARDUINO_ARCH_ESP32
+        udpConnected = espalexaUdp.beginMulticast(IPAddress(239, 255, 255, 250), 1900);
+        #else
+        udpConnected = espalexaUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 255, 255, 250), 1900);
+        #endif    
     #endif
 
     if (udpConnected){
@@ -352,15 +381,36 @@ public:
     EA_DEBUGLN("Failed");
     return false;
   }
+   
+   void HandleUdpPacket(uint8_t *packetBuffer, size_t packetSize, IPAddress remoteIp, uint16_t remotePort)
+   {
+        if (packetSize < 1) return; //no new udp packet
+        if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
+    
+        const char* request = (const char *) packetBuffer;
+        if (strnstr(request, "M-SEARCH", packetSize) == nullptr) return;
 
-  //service loop
+        EA_DEBUGLN(request);
+        if (strnstr(request, "ssdp:disc", packetSize)  != nullptr &&  //short for "ssdp:discover"
+            (strnstr(request, "upnp:rootd", packetSize) != nullptr || //short for "upnp:rootdevice"
+            strnstr(request, "ssdp:all", packetSize)   != nullptr ||
+            strnstr(request, "asic:1", packetSize)     != nullptr )) //short for "device:basic:1"
+        {
+            EA_DEBUGLN("Responding search req...");
+            respondToSearch(remoteIp, remotePort);
+        }
+   }
+
+  //service loop for non-async modes
   void loop() {
     #ifndef ESPALEXA_ASYNC
     if (server == nullptr) return; //only if begin() was not called
     server->handleClient();
     #endif
     
+    #ifndef USE_ESP32_ASYNC_UDP
     if (!udpConnected) return;   
+    
     int packetSize = espalexaUdp.parsePacket();    
     if (packetSize < 1) return; //no new udp packet
     
@@ -371,20 +421,8 @@ public:
     packetBuffer[packetSize] = 0;
   
     espalexaUdp.flush();
-    if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
-  
-    const char* request = (const char *) packetBuffer;
-    if (strstr(request, "M-SEARCH") == nullptr) return;
-
-    EA_DEBUGLN(request);
-    if (strstr(request, "ssdp:disc")  != nullptr &&  //short for "ssdp:discover"
-        (strstr(request, "upnp:rootd") != nullptr || //short for "upnp:rootdevice"
-         strstr(request, "ssdp:all")   != nullptr ||
-         strstr(request, "asic:1")     != nullptr )) //short for "device:basic:1"
-    {
-      EA_DEBUGLN("Responding search req...");
-      respondToSearch();
-    }
+    HandleUdpPacket(packetBuffer, packetSize, espalexaUdp.remoteIP(), espalexaUdp.remotePort());
+    #endif
   }
 
   // returns device index or 0 on failure
