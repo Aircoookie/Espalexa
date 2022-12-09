@@ -356,10 +356,7 @@ public:
         { 
             espalexaUdp.onPacket([this](AsyncUDPPacket packet) {
                 EA_DEBUG("UDP packet Length: ");
-                EA_DEBUG(packet.length());
-                EA_DEBUGLN(", Data:");
-                EA_DEBUGBUF(packet.data(), packet.length());
-                EA_DEBUGLN("");
+                EA_DEBUGLN(packet.length());
 
                 HandleUdpPacket(packet.data(), packet.length(), packet.remoteIP(), packet.remotePort());
             });
@@ -390,7 +387,8 @@ public:
         const char* request = (const char *) packetBuffer;
         if (strnstr(request, "M-SEARCH", packetSize) == nullptr) return;
 
-        EA_DEBUGLN(request);
+        EA_DEBUGBUF(request, packetSize);
+        EA_DEBUGLN("");
         if (strnstr(request, "ssdp:disc", packetSize)  != nullptr &&  //short for "ssdp:discover"
             (strnstr(request, "upnp:rootd", packetSize) != nullptr || //short for "upnp:rootdevice"
             strnstr(request, "ssdp:all", packetSize)   != nullptr ||
@@ -479,7 +477,7 @@ public:
   bool handleAlexaApiCall(AsyncWebServerRequest* request)
   {
     server = request; //copy request reference
-    String req = request->url(); //body from global variable
+    const String& req = request->url(); //body from global variable
     EA_DEBUGLN(request->contentType());
     if (request->hasParam("body", true)) // This is necessary, otherwise ESP crashes if there is no body
     {
@@ -492,7 +490,8 @@ public:
   bool handleAlexaApiCall(String req, String body)
   {  
   #endif
-    EA_DEBUGLN("AlexaApiCall");
+    EA_DEBUG("AlexaApiCall ");
+    EA_DEBUGLN(req);
     if (req.indexOf("api") <0) return false; //return if not an API call
     EA_DEBUGLN("ok");
 
@@ -509,7 +508,7 @@ public:
       server->send(200, "application/json", F("[{\"success\":{\"/lights/1/state/\": true}}]"));
 
       uint32_t devId = req.substring(req.indexOf("lights")+7).toInt();
-      EA_DEBUG("ls"); EA_DEBUGLN(devId);
+      EA_DEBUG("ls ");
       EA_DEBUGLN(devId);
       unsigned idx = decodeLightKey(devId);
       if (idx >= currentDeviceCount) return true; //return if invalid ID
