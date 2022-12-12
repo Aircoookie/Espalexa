@@ -13,7 +13,7 @@
  * @version 2.7.0
  * @author Christian Schwinne
  * @license MIT
- * @contributors d-999
+ * @contributors d-999, DeLoachAero
  */
 
 #include "Arduino.h"
@@ -27,8 +27,12 @@
 #ifndef ESPALEXA_MAXDEVICES
  #define ESPALEXA_MAXDEVICES 10 //this limit only has memory reasons, set it higher should you need to, max 128
 #endif
+#ifndef SSDP_INTERVAL
+ #define SSDP_INTERVAL 100      // cache control interval for SSDP Search response
+#endif
 
-//#define ESPALEXA_DEBUG
+//#define ESPALEXA_DEBUG            // for general debugging of ESPAlexa
+//#define ESPALEXA_DEBUG_ALL_SSDP   // if you want to see all the SSDP UDP discovery packet contents received when ESPALEXA_DEBUG is on
 
 #ifdef ESPALEXA_ASYNC
  #ifdef ARDUINO_ARCH_ESP32
@@ -82,6 +86,7 @@ private:
   uint8_t currentDeviceCount = 0;
   bool discoverable = true;
   bool udpConnected = false;
+  bool enableSubnetFilter = false;  // default false for backward compatibility
 
   EspalexaDevice* devices[ESPALEXA_MAXDEVICES] = {};
   //Keep in mind that Device IDs go from 1 to DEVICES, cpp arrays from 0 to DEVICES-1!!
@@ -302,13 +307,13 @@ private:
 
     sprintf_P(buf,PSTR("HTTP/1.1 200 OK\r\n"
       "EXT:\r\n"
-      "CACHE-CONTROL: max-age=100\r\n" // SSDP_INTERVAL
+      "CACHE-CONTROL: max-age=%d\r\n" // SSDP_INTERVAL
       "LOCATION: http://%s:80/description.xml\r\n"
       "SERVER: FreeRTOS/6.0.5, UPnP/1.0, IpBridge/1.17.0\r\n" // _modelName, _modelNumber
       "hue-bridgeid: %s\r\n"
       "ST: urn:schemas-upnp-org:device:basic:1\r\n"  // _deviceType
       "USN: uuid:2f402f80-da50-11e1-9b23-%s::upnp:rootdevice\r\n" // _uuid::_deviceType
-      "\r\n"),s,escapedMac.c_str(),escapedMac.c_str());
+      "\r\n"),SSDP_INTERVAL,s,escapedMac.c_str(),escapedMac.c_str());
 
     #ifdef USE_ESP32_ASYNC_UDP
         espalexaUdp.writeTo((uint8_t*)buf, strlen(buf), remoteIP, remotePort);
@@ -355,9 +360,6 @@ public:
         if (udpConnected)
         { 
             espalexaUdp.onPacket([this](AsyncUDPPacket packet) {
-                EA_DEBUG("UDP packet Length: ");
-                EA_DEBUGLN(packet.length());
-
                 HandleUdpPacket(packet.data(), packet.length(), packet.remoteIP(), packet.remotePort());
             });
         }
@@ -387,15 +389,32 @@ public:
         const char* request = (const char *) packetBuffer;
         if (strnstr(request, "M-SEARCH", packetSize) == nullptr) return;
 
-        EA_DEBUGBUF(request, packetSize);
-        EA_DEBUGLN("");
-        if (strnstr(request, "ssdp:disc", packetSize)  != nullptr &&  //short for "ssdp:discover"
-            (strnstr(request, "upnp:rootd", packetSize) != nullptr || //short for "upnp:rootdevice"
-            strnstr(request, "ssdp:all", packetSize)   != nullptr ||
-            strnstr(request, "asic:1", packetSize)     != nullptr )) //short for "device:basic:1"
+        EA_DEBUG("Got UDP! Packet Length: ");
+        EA_DEBUGLN(packetSize);
+
+        #if defined(ESPALEXA_DEBUG) && defined(ESPALEXA_DEBUG_ALL_SSDP)
+            EA_DEBUGBUF(request, packetSize);
+            EA_DEBUGLN("");
+        #endif
+        // check remote IP if subnet filter enabled
+        if (!enableSubnetFilter || ((remoteIp & WiFi.subnetMask()) == (WiFi.localIP() & WiFi.subnetMask()) && remoteIp != WiFi.localIP()))
         {
-            EA_DEBUGLN("Responding search req...");
-            respondToSearch(remoteIp, remotePort);
+            // remote caller is on same subnet, or subnet filter not enabled
+            if (strnstr(request, "ssdp:disc", packetSize)  != nullptr &&  //short for "ssdp:discover"
+                (strnstr(request, "upnp:rootd", packetSize) != nullptr || //short for "upnp:rootdevice"
+                strnstr(request, "ssdp:all", packetSize)   != nullptr ||
+                strnstr(request, "asic:1", packetSize)     != nullptr )) //short for "device:basic:1"
+            {
+                EA_DEBUG("Responding to search req from ");
+                EA_DEBUGLN(remoteIp.toString());
+                respondToSearch(remoteIp, remotePort);
+            }
+        }
+        else 
+        {
+            // remote caller not on same subnet, or sent my own local IP as the remote IP
+            EA_DEBUG("UDP remote IP not on same subnet or using device IP! ");
+            EA_DEBUGLN(remoteIp.toString());
         }
    }
 
@@ -477,9 +496,19 @@ public:
   bool handleAlexaApiCall(AsyncWebServerRequest* request)
   {
     server = request; //copy request reference
-    const String& req = request->url(); //body from global variable
+    // note we may get body from global "body" variable or the request, depending on type of call
+    const String& req = request->url(); 
+    #ifdef ESPALEXA_DEBUG
+    EA_DEBUG("Request from client IP ");
+    if (request->client() == nullptr)
+      EA_DEBUGLN("Null");
+    else
+      EA_DEBUGLN(request->client()->remoteIP());
+    #endif
+    
     EA_DEBUGLN(request->contentType());
-    if (request->hasParam("body", true)) // This is necessary, otherwise ESP crashes if there is no body
+    // body may have been set by separate handler, but might instead be part of this request instance
+    if (request->hasParam("body", true)) 
     {
       EA_DEBUG("BodyMethod2");
       body = request->getParam("body", true)->value();
@@ -498,18 +527,17 @@ public:
     if (body.indexOf("devicetype") > 0) //client wants a hue api username, we don't care and give static
     {
       EA_DEBUGLN("devType");
-      body = "";
+      body.clear();
       server->send(200, "application/json", F("[{\"success\":{\"username\":\"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]"));
       return true;
     }
 
     if ((req.indexOf("state") > 0) && (body.length() > 0)) //client wants to control light
     {
-      server->send(200, "application/json", F("[{\"success\":{\"/lights/1/state/\": true}}]"));
-
       uint32_t devId = req.substring(req.indexOf("lights")+7).toInt();
       EA_DEBUG("ls ");
       EA_DEBUGLN(devId);
+
       unsigned idx = decodeLightKey(devId);
       if (idx >= currentDeviceCount) return true; //return if invalid ID
       EspalexaDevice* dev = devices[idx];
@@ -520,52 +548,60 @@ public:
       {
         dev->setValue(0);
         dev->setPropertyChanged(EspalexaDeviceProperty::off);
-        dev->doCallback();
-        return true;
       }
-      
-      if (body.indexOf("true") >0) //ON command
+      else 
       {
-        dev->setValue(dev->getLastValue());
-        dev->setPropertyChanged(EspalexaDeviceProperty::on);
-      }
-      
-      if (body.indexOf("bri")  >0) //BRIGHTNESS command
-      {
-        uint8_t briL = body.substring(body.indexOf("bri") +5).toInt();
-        if (briL == 255)
+        if (body.indexOf("true") >0) //ON command
         {
-         dev->setValue(255);
-        } else {
-         dev->setValue(briL+1); 
+          dev->setValue(dev->getLastValue() ? dev->getLastValue() : 255);
+          dev->setPropertyChanged(EspalexaDeviceProperty::on);
         }
-        dev->setPropertyChanged(EspalexaDeviceProperty::bri);
+        
+        if (body.indexOf("bri")  >0) //BRIGHTNESS command
+        {
+          uint8_t briL = body.substring(body.indexOf("bri") +5).toInt();
+          if (briL == 255)
+          {
+          dev->setValue(255);
+          } else {
+          dev->setValue(briL+1); 
+          }
+          dev->setPropertyChanged(EspalexaDeviceProperty::bri);
+        }
+        
+        if (body.indexOf("xy")   >0) //COLOR command (XY mode)
+        {
+          dev->setColorXY(body.substring(body.indexOf("[") +1).toFloat(), body.substring(body.indexOf(",0") +1).toFloat());
+          dev->setPropertyChanged(EspalexaDeviceProperty::xy);
+        }
+        
+        if (body.indexOf("hue")  >0) //COLOR command (HS mode)
+        {
+          dev->setColor(body.substring(body.indexOf("hue") +5).toInt(), body.substring(body.indexOf("sat") +5).toInt());
+          dev->setPropertyChanged(EspalexaDeviceProperty::hs);
+        }
+        
+        if (body.indexOf("ct")   >0) //COLOR TEMP command (white spectrum)
+        {
+          dev->setColor(body.substring(body.indexOf("ct") +4).toInt());
+          dev->setPropertyChanged(EspalexaDeviceProperty::ct);
+        }
       }
-      
-      if (body.indexOf("xy")   >0) //COLOR command (XY mode)
-      {
-        dev->setColorXY(body.substring(body.indexOf("[") +1).toFloat(), body.substring(body.indexOf(",0") +1).toFloat());
-        dev->setPropertyChanged(EspalexaDeviceProperty::xy);
-      }
-      
-      if (body.indexOf("hue")  >0) //COLOR command (HS mode)
-      {
-        dev->setColor(body.substring(body.indexOf("hue") +5).toInt(), body.substring(body.indexOf("sat") +5).toInt());
-        dev->setPropertyChanged(EspalexaDeviceProperty::hs);
-      }
-      
-      if (body.indexOf("ct")   >0) //COLOR TEMP command (white spectrum)
-      {
-        dev->setColor(body.substring(body.indexOf("ct") +4).toInt());
-        dev->setPropertyChanged(EspalexaDeviceProperty::ct);
-      }
-      
-      dev->doCallback();
       
       #ifdef ESPALEXA_DEBUG
       if (dev->getLastChangedProperty() == EspalexaDeviceProperty::none)
         EA_DEBUGLN("STATE REQ WITHOUT BODY (likely Content-Type issue #6)");
       #endif
+      
+      body.clear();
+      char rsp[128];
+      sprintf_P(rsp, PSTR("[{\"success\":{\"/lights/%d/state/on\": %s}}]"), devId, dev->getState() ? "true" : "false");
+      server->send(200, "application/json", rsp);
+      EA_DEBUG("State Response: ");
+      EA_DEBUGLN(rsp); 
+
+      dev->doCallback();
+
       return true;
     }
     
@@ -602,16 +638,20 @@ public:
           char buf[512];
           deviceJsonString(devices[idx], buf);
           server->send(200, "application/json", buf);
+          EA_DEBUG("Response: ");
+          EA_DEBUGLN(buf);
         } else {
           server->send(200, "application/json", "{}");
+          EA_DEBUGLN("Response: {}");
         }
       }
-      
+      body.clear();
       return true;
     }
 
     //we don't care about other api commands at this time and send empty JSON
     server->send(200, "application/json", "{}");
+    body.clear();
     return true;
   }
   
@@ -619,6 +659,13 @@ public:
   void setDiscoverable(bool d)
   {
     discoverable = d;
+  }
+
+  // set true to require remote UDP addresses be on the same subnet as the device, and not the same IP as the device,
+  // to avoid remote denial of service attacks (two common SSDP attacks)
+  void setEnableSubnetFilter(bool f)
+  {
+    enableSubnetFilter = f;
   }
   
   //get EspalexaDevice at specific index
