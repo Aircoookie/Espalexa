@@ -97,10 +97,10 @@ private:
   {
     switch (t)
     {
-      case EspalexaDeviceType::dimmable:      return PSTR("Dimmable light");
-      case EspalexaDeviceType::whitespectrum: return PSTR("Color temperature light");
-      case EspalexaDeviceType::color:         return PSTR("Color light");
-      case EspalexaDeviceType::extendedcolor: return PSTR("Extended color light");
+      case EspalexaDeviceType::dimmable:      return "Dimmable light";
+      case EspalexaDeviceType::whitespectrum: return "Color temperature light";
+      case EspalexaDeviceType::color:         return "Color light";
+      case EspalexaDeviceType::extendedcolor: return "Extended color light";
       default: return "";
     }
   }
