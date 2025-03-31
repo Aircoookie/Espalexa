@@ -97,10 +97,10 @@ private:
   {
     switch (t)
     {
-      case EspalexaDeviceType::dimmable:      return "Dimmable light";
-      case EspalexaDeviceType::whitespectrum: return "Color temperature light";
-      case EspalexaDeviceType::color:         return "Color light";
-      case EspalexaDeviceType::extendedcolor: return "Extended color light";
+      case EspalexaDeviceType::dimmable:      return PSTR("Dimmable light");
+      case EspalexaDeviceType::whitespectrum: return PSTR("Color temperature light");
+      case EspalexaDeviceType::color:         return PSTR("Color light");
+      case EspalexaDeviceType::extendedcolor: return PSTR("Extended color light");
       default: return "";
     }
   }
@@ -122,7 +122,8 @@ private:
     uint8_t mac[6];
     WiFi.macAddress(mac);
 
-    sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X:00:11-%02X"), mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], idx);
+    // sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X:00:11-%02X"), mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], idx);
+    sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X-%02X-00:11"), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], idx);
   }
 
   // construct 'globally unique' Json dict key fitting into signed int
