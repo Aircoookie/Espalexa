@@ -98,7 +98,7 @@ Here is an overview of the devices (light types) Espalexa can emulate:
 | EspalexaDeviceType::whitespectrum        | Color temperature adjustment not working on Dot |
 | EspalexaDeviceType::color                | Works as intended (dimming + color)             |
 | EspalexaDeviceType::extendedcolor        | Color temperature adjustment not working on Dot |
-| EspalexaDeviceType::onoff (experimental) | Deprecated. Treated as dimmable.                |
+| EspalexaDeviceType::onoff                | Works as intended                |
 
 See the example `EspalexaFullyFeatured` to learn how to define each device type and use the new EspalexaDevice pointer callback function type!
 
