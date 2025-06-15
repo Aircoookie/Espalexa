@@ -124,7 +124,8 @@ private:
     uint8_t mac[6];
     WiFi.macAddress(mac);
 
-    sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X:00:11-%02X"), mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], idx);
+    // sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X:00:11-%02X"), mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], idx);
+    sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X-%02X-00:11"), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], idx);
   }
 
   // construct 'globally unique' Json dict key fitting into signed int
@@ -170,7 +171,6 @@ private:
                       
         , (dev->getValue())?"true":"false", typeString(dev->getType()),
         dev->getName().c_str(), modelidString(dev->getType()), buf_lightid);
-        Serial.println(buf);
     }
     else
     {
