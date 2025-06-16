@@ -101,6 +101,7 @@ private:
       case EspalexaDeviceType::whitespectrum: return PSTR("Color temperature light");
       case EspalexaDeviceType::color:         return PSTR("Color light");
       case EspalexaDeviceType::extendedcolor: return PSTR("Extended color light");
+      case EspalexaDeviceType::onoff:         return PSTR("On/off light");
       default: return "";
     }
   }
@@ -113,6 +114,7 @@ private:
       case EspalexaDeviceType::whitespectrum: return "LWT010";
       case EspalexaDeviceType::color:         return "LST001";
       case EspalexaDeviceType::extendedcolor: return "LCT015";
+      case EspalexaDeviceType::onoff:         return "HASS321";
       default: return "";
     }
   }
@@ -122,6 +124,7 @@ private:
     uint8_t mac[6];
     WiFi.macAddress(mac);
 
+    // sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X:00:11-%02X"), mac[0],mac[1],mac[2],mac[3],mac[4],mac[5], idx);
     sprintf_P(out, PSTR("%02X:%02X:%02X:%02X:%02X:%02X-%02X-00:11"), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], idx);
   }
 
@@ -159,12 +162,26 @@ private:
     if (static_cast<uint8_t>(dev->getType()) > 1)
       sprintf(buf_cm,PSTR("\",\"colormode\":\"%s"), modeString(dev->getColorMode()));
     
-    sprintf_P(buf, PSTR("{\"state\":{\"on\":%s,\"bri\":%u%s%s,\"alert\":\"none%s\",\"mode\":\"homeautomation\",\"reachable\":true},"
-                   "\"type\":\"%s\",\"name\":\"%s\",\"modelid\":\"%s\",\"manufacturername\":\"Philips\",\"productname\":\"E%u"
-                   "\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.7.0\"}")
-                   
-    , (dev->getValue())?"true":"false", dev->getLastValue()-1, buf_col, buf_ct, buf_cm, typeString(dev->getType()),
-    dev->getName().c_str(), modelidString(dev->getType()), static_cast<uint8_t>(dev->getType()), buf_lightid);
+
+    if (static_cast<uint8_t>(dev->getType()) == 0)
+    {
+       // On/Off
+        sprintf_P(buf, PSTR("{\"state\":{\"on\":%s,\"alert\":\"none%\",\"reachable\":true},"
+                       "\"type\":\"%s\",\"name\":\"%s\",\"modelid\":\"%s\",\"manufacturername\":\"Philips\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.7.0\"}")
+                      
+        , (dev->getValue())?"true":"false", typeString(dev->getType()),
+        dev->getName().c_str(), modelidString(dev->getType()), buf_lightid);
+    }
+    else
+    {
+
+        sprintf_P(buf, PSTR("{\"state\":{\"on\":%s,\"bri\":%u%s%s,\"alert\":\"none%s\",\"mode\":\"homeautomation\",\"reachable\":true},"
+                      "\"type\":\"%s\",\"name\":\"%s\",\"modelid\":\"%s\",\"manufacturername\":\"Philips\",\"productname\":\"E%u"
+                      "\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.7.0\"}")
+                      
+        , (dev->getValue())?"true":"false", dev->getLastValue()-1, buf_col, buf_ct, buf_cm, typeString(dev->getType()),
+        dev->getName().c_str(), modelidString(dev->getType()), static_cast<uint8_t>(dev->getType()), buf_lightid);
+    }
   }
   
   //Espalexa status page /espalexa
@@ -370,7 +387,7 @@ public:
     espalexaUdp.read(packetBuffer, packetSize);
     packetBuffer[packetSize] = 0;
   
-    espalexaUdp.flush();
+    // espalexaUdp.flush();
     if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
   
     const char* request = (const char *) packetBuffer;
