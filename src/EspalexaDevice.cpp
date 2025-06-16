@@ -328,8 +328,16 @@ void EspalexaDevice::setColor(uint8_t r, uint8_t g, uint8_t b)
   float X = r * 0.664511f + g * 0.154324f + b * 0.162028f;
   float Y = r * 0.283881f + g * 0.668433f + b * 0.047685f;
   float Z = r * 0.000088f + g * 0.072310f + b * 0.986039f;
-  _x = X / (X + Y + Z);
-  _y = Y / (X + Y + Z);
+  float sum = X + Y + Z;
+
+  if (sum > 0.00001f) { // evita divisão por zero
+    _x = X / sum;
+    _y = Y / sum;
+  } else {
+    _x = 0.0f;
+    _y = 0.0f;
+  }
+
   _rgb = ((r << 16) | (g << 8) | b);
   _mode = EspalexaColorMode::xy;
 }
