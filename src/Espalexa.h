@@ -101,7 +101,7 @@ private:
       case EspalexaDeviceType::whitespectrum: return PSTR("Color temperature light");
       case EspalexaDeviceType::color:         return PSTR("Color light");
       case EspalexaDeviceType::extendedcolor: return PSTR("Extended color light");
-      case EspalexaDeviceType::onoff: return PSTR("On/off light");
+      case EspalexaDeviceType::onoff:         return PSTR("On/off light");
       default: return "";
     }
   }
@@ -166,7 +166,7 @@ private:
     if (static_cast<uint8_t>(dev->getType()) == 0)
     {
        // On/Off
-        sprintf_P(buf, PSTR("{\"state\":{\"on\":%s,\"alert\":\"none%\",\"reachable\":true},"
+        sprintf_P(buf, PSTR("{\"state\":{\"on\":%s,\"alert\":\"none\",\"reachable\":true},"
                        "\"type\":\"%s\",\"name\":\"%s\",\"modelid\":\"%s\",\"manufacturername\":\"Philips\",\"uniqueid\":\"%s\",\"swversion\":\"espalexa-2.7.0\"}")
                       
         , (dev->getValue())?"true":"false", typeString(dev->getType()),
