@@ -329,7 +329,7 @@ void EspalexaDevice::setColor(uint8_t r, uint8_t g, uint8_t b)
   float Z = r * 0.000088f + g * 0.072310f + b * 0.986039f;
   float sum = X + Y + Z;
 
-  if (sum > 0.00001f) { // evita divisão por zero
+  if (sum > 0.00001f) { // avoids division by zero
     _x = X / sum;
     _y = Y / sum;
   } else {
