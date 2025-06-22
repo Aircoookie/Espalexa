@@ -101,7 +101,7 @@ private:
       case EspalexaDeviceType::whitespectrum: return PSTR("Color temperature light");
       case EspalexaDeviceType::color:         return PSTR("Color light");
       case EspalexaDeviceType::extendedcolor: return PSTR("Extended color light");
-      case EspalexaDeviceType::onoff: return PSTR("On/off light");
+      case EspalexaDeviceType::onoff:         return PSTR("On/off light");
       default: return "";
     }
   }
